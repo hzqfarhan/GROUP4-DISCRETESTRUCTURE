@@ -1,36 +1,100 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# IEP — Interstate Expedition Planner
 
-## Getting Started
+A PWA that finds the **optimal travel route** between **UTHM Parit Raja** and
+**Masjid Sri Sendayan**, with two priority modes (**Time-Optimized** /
+**Budget-Optimized**) powered by a hand-implemented **Dijkstra's algorithm**
+on an undirected weighted graph. For any other origin/destination pair, the
+app falls back to **Ollama Cloud** to generate a route graph, then runs the
+same Dijkstra locally.
 
-First, run the development server:
+Built for the **BIK10602 Discrete Structure** group project.
+
+## Stack
+
+- **Next.js 16** (App Router) + **TypeScript** + **Tailwind CSS v4**
+- **Hand-written Dijkstra** (no graph libraries) — see `lib/graph/dijkstra.ts`
+- **Zod** for validating AI responses and API bodies
+- **Ollama Cloud** for non-hardcoded origin/destination pairs
+- **PWA**: manifest + service worker for offline support of the hardcoded pair
+
+## Setup
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env.local          # then fill in OLLAMA_CLOUD_API_KEY
+npm run dev                         # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+> The hardcoded UTHM → Masjid Sri Sendayan pair works **without** any API
+> key. The key is only required for free-text origin/destination inputs.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command          | What it does                          |
+|------------------|---------------------------------------|
+| `npm run dev`    | Start the dev server                  |
+| `npm run build`  | Production build                      |
+| `npm run start`  | Start the production server           |
+| `npm run lint`   | Run ESLint                            |
+| `npx tsx scripts/smoke.ts` | Smoke-test the graph logic   |
 
-## Learn More
+## How the optimization works
 
-To learn more about Next.js, take a look at the following resources:
+Every road edge has four base properties: **distance**, **time**, **toll**,
+and a **road-type penalty** (for traffic lights, single lanes, etc.).
+At runtime, each edge's "weight" is computed as:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+W = Time + (Toll × β) + Penalty
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+where the **β (Toll Penalty Factor)** is controlled by the user:
 
-## Deploy on Vercel
+| Mode             | β    | Effect on route choice                    |
+|------------------|------|-------------------------------------------|
+| Time-Optimized   | 0.5  | Tolls barely matter → PLUS Expressway     |
+| Budget-Optimized | 2.5  | Tolls add huge cost → Federal Route 1     |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Dijkstra is then run on the weighted graph. The full graph is also
+explored with bounded DFS to surface up to 5 alternative routes, which
+are listed in the UI and can be tapped to swap onto the map.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Project structure
+
+```
+app/
+  page.tsx              # landing
+  planner/page.tsx      # main interactive map + bottom sheet
+  about/page.tsx        # graph theory explainer
+  api/plan/route.ts     # POST /api/plan
+components/
+  ui/                   # GlassCard, StatusBar, PhoneFrame, PrimaryButton
+  planner/              # MapCanvas, BottomSheet, GlassSearchPill, etc.
+lib/
+  graph/                # types, hardcoded graph, weight, dijkstra, stats
+  ai/ollama.ts          # Zod-validated Ollama Cloud client
+public/
+  manifest.json, sw.js, icon-*.png
+```
+
+## Demo screenshots to capture for the report
+
+1. **Planner with default inputs** — the pastel map with the gradient
+   route, glass search pill, and FABs visible.
+2. **Time-Optimized result** — recommended route is the PLUS Expressway
+   (220 km, 2h 40m, RM 24.50).
+3. **Budget-Optimized result** — recommended route is Federal Route 1
+   (225 km, 5h 3m, RM 0.00).
+4. **SVG map with the gradient purple polyline** — proves the graph
+   theory → visualization pipeline.
+5. **"How it works" page** — the weight formula + Dijkstra pseudocode.
+
+## Environment variables
+
+| Name                     | Required for    | Default                           |
+|--------------------------|-----------------|-----------------------------------|
+| `OLLAMA_CLOUD_API_KEY`   | AI fallback     | —                                 |
+| `OLLAMA_CLOUD_MODEL`     | AI fallback     | `llama3.1:70b`                    |
+| `OLLAMA_CLOUD_BASE_URL`  | AI fallback     | `https://api.ollama.cloud/v1`     |
+
+## Built for BIK10602 · Discrete Structure · Graph Theory Shortest Path

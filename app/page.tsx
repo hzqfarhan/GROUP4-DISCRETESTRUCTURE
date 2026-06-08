@@ -1,65 +1,77 @@
-import Image from "next/image";
+import Link from "next/link";
+import { Clock, Wallet, ArrowRight } from "lucide-react";
+import { StatusBar } from "@/components/ui/StatusBar";
+import { PhoneFrame } from "@/components/ui/PhoneFrame";
+import { GlassCard } from "@/components/ui/GlassCard";
 
-export default function Home() {
+export default function LandingPage() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <PhoneFrame>
+      <StatusBar tone="dark" />
+      <div
+        className="relative flex flex-1 flex-col items-center px-6 pt-10 pb-12"
+        style={{ background: "var(--grad-splash)" }}
+      >
+        <div className="mt-8 flex h-24 w-24 items-center justify-center rounded-3xl bg-white shadow-[0_12px_32px_rgba(82,63,160,0.18)]">
+          <span className="text-2xl font-black tracking-tight text-primary-500">
+            IEP
+          </span>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+        <h1 className="mt-8 text-center text-3xl font-bold text-ink-900">
+          Interstate
+          <br />
+          Expedition Planner
+        </h1>
+        <p className="mt-3 max-w-[300px] text-center text-sm text-ink-700">
+          Find the optimal route between UTHM Parit Raja and Masjid Sri
+          Sendayan, balancing travel time and toll cost using graph theory.
+        </p>
+
+        <div className="mt-8 w-full space-y-3">
+          <Link
+            href="/planner"
+            className="flex h-14 w-full items-center justify-center gap-2 rounded-full bg-[image:var(--grad-cta)] text-base font-semibold text-white shadow-[0_8px_24px_rgba(107,60,255,0.35)] active:scale-95 transition-transform"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            Plan my trip
+            <ArrowRight className="h-5 w-5" />
+          </Link>
+          <Link
+            href="/about"
+            className="flex h-14 w-full items-center justify-center gap-2 rounded-full border border-white/70 bg-white/60 text-base font-semibold text-ink-900 backdrop-blur active:scale-95 transition-transform"
           >
-            Documentation
-          </a>
+            How it works
+          </Link>
         </div>
-      </main>
-    </div>
+
+        <GlassCard className="mt-8 w-full p-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-2xl bg-sky-50/70 p-3">
+              <Clock className="h-5 w-5 text-accent-sky" strokeWidth={2.4} />
+              <div className="mt-2 text-sm font-semibold text-ink-900">
+                Time-Optimized
+              </div>
+              <div className="mt-0.5 text-xs text-ink-500">
+                β = 0.5 · ignores tolls
+              </div>
+            </div>
+            <div className="rounded-2xl bg-amber-50/70 p-3">
+              <Wallet className="h-5 w-5 text-accent-amber" strokeWidth={2.4} />
+              <div className="mt-2 text-sm font-semibold text-ink-900">
+                Budget-Optimized
+              </div>
+              <div className="mt-0.5 text-xs text-ink-500">
+                β = 2.5 · avoids tolls
+              </div>
+            </div>
+          </div>
+        </GlassCard>
+
+        <p className="mt-auto pt-8 text-center text-xs text-ink-500">
+          Built for BIK10602 · Discrete Structure
+          <br />
+          Graph Theory · Shortest Path
+        </p>
+      </div>
+    </PhoneFrame>
   );
 }
