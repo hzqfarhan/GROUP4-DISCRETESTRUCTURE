@@ -111,20 +111,20 @@ export function MapCanvas({
       >
         <defs>
           <linearGradient id="routeGrad" x1="0" x2="1" y1="0" y2="0">
-            <stop offset="0%" stopColor="#5ab8ff" />
-            <stop offset="60%" stopColor="#8e66ff" />
-            <stop offset="100%" stopColor="#6b3cff" />
+            <stop offset="0%" stopColor="#237af9" />
+            <stop offset="60%" stopColor="#e06e9c" />
+            <stop offset="100%" stopColor="#df0059" />
           </linearGradient>
           <linearGradient id="mapAltGrad" x1="0" x2="1" y1="0" y2="1">
-            <stop offset="0%" stopColor="#e3e5f5" />
-            <stop offset="100%" stopColor="#d7def6" />
+            <stop offset="0%" stopColor="#f5fafc" />
+            <stop offset="100%" stopColor="#e9f2fe" />
           </linearGradient>
           <filter id="softShadow" x="-50%" y="-50%" width="200%" height="200%">
             <feDropShadow
               dx="0"
               dy="6"
               stdDeviation="8"
-              floodColor="#523FA0"
+              floodColor="#CC0D5A"
               floodOpacity="0.18"
             />
           </filter>
@@ -186,7 +186,7 @@ export function MapCanvas({
             y={l.y}
             fontSize="10"
             fontWeight={500}
-            fill="#9095b5"
+            fill="#9ca3af"
             style={{ letterSpacing: 0.3 }}
           >
             {l.text}
@@ -205,12 +205,12 @@ export function MapCanvas({
               <g key={j.id} transform={`translate(${p.x}, ${p.y})`}>
                 <circle
                   r={22}
-                  fill="#6b3cff"
+                  fill="#df0059"
                   fillOpacity={0.18}
                   className="animate-ping-slow"
                 />
-                <circle r={12} fill="#6b3cff" fillOpacity={0.35} />
-                <circle r={6} fill="#6b3cff" />
+                <circle r={12} fill="#df0059" fillOpacity={0.35} />
+                <circle r={6} fill="#df0059" />
               </g>
             );
           }
@@ -221,11 +221,11 @@ export function MapCanvas({
                 <circle
                   r={9}
                   fill="#ffffff"
-                  stroke="#6b3cff"
+                  stroke="#df0059"
                   strokeWidth={3}
                   filter="url(#softShadow)"
                 />
-                <circle r={3} fill="#6b3cff" />
+                <circle r={3} fill="#df0059" />
               </g>
             );
           }
@@ -236,12 +236,12 @@ export function MapCanvas({
                 <circle
                   r={7}
                   fill="#ffffff"
-                  stroke="#6b3cff"
+                  stroke="#df0059"
                   strokeWidth={3}
                   filter="url(#softShadow)"
                 />
               ) : (
-                <circle r={4} fill="#ffffff" stroke="#b69cff" strokeWidth={1.5} />
+                <circle r={4} fill="#ffffff" stroke="#e06e9c" strokeWidth={1.5} />
               )}
               {showFullGraph && (
                 <text
@@ -249,7 +249,7 @@ export function MapCanvas({
                   y={3}
                   fontSize="9"
                   fontWeight={600}
-                  fill={onPath ? "#3f1ab3" : "#6e6b85"}
+                  fill={onPath ? "#cc0d5a" : "#6e6b85"}
                 >
                   {j.name}
                 </text>

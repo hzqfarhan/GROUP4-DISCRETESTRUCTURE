@@ -18,7 +18,7 @@ export function PrimaryButton({
 }: PrimaryButtonProps) {
   const isDisabled = disabled || loading;
   const sizing =
-    size === "sm" ? "h-10 text-sm" : "h-12 text-sm";
+    size === "sm" ? "h-8 px-3 text-[11px]" : "h-12 text-sm";
   return (
     <button
       {...rest}

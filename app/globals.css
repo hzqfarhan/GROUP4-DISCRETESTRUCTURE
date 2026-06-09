@@ -1,60 +1,69 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary-50: #f4f1ff;
-  --color-primary-100: #e9e3ff;
-  --color-primary-200: #d3c8ff;
-  --color-primary-300: #b69cff;
-  --color-primary-400: #8e66ff;
-  --color-primary-500: #6b3cff;
-  --color-primary-600: #5424e6;
-  --color-primary-700: #3f1ab3;
+  /* Brand — BeU Pink scale (from pallete.md) */
+  --color-primary-50: #fff0f6;
+  --color-primary-100: #ffe9f2;
+  --color-primary-200: #f5cfde;
+  --color-primary-300: #efb4cc;
+  --color-primary-400: #e06e9c;
+  --color-primary-500: #df0059; /* BeU Pink — primary */
+  --color-primary-600: #cc0d5a; /* Deep Pink — hover/pressed */
+  --color-primary-700: #d63d7b; /* Pink Variant — gradient mid */
 
-  --color-accent-coral: #ff8a65;
-  --color-accent-amber: #ffb547;
-  --color-accent-sky: #5ab8ff;
+  /* Accents */
+  --color-accent-coral: #ff6b6b; /* Red Accent */
+  --color-accent-amber: #ffc107; /* Yellow Accent */
+  --color-accent-sky: #237af9;   /* Blue Accent */
 
-  --color-surface-base: #fbfaff;
+  /* Surface — neutral, light, glass-friendly */
+  --color-surface-base: #fafafa;   /* White-ish page bg */
   --color-surface-card: #ffffff;
-  --color-surface-map: #edeefb;
-  --color-surface-map-alt: #e3e5f5;
+  --color-surface-map: #f5fafc;    /* Surface (cool light) */
+  --color-surface-map-alt: #f1f1f1; /* Light Grey */
 
-  --color-ink-900: #1b1a2e;
-  --color-ink-700: #3f3d55;
-  --color-ink-500: #6e6b85;
-  --color-ink-300: #a6a3bd;
+  /* Ink (text) — Near Black through Medium Grey */
+  --color-ink-900: #221f20; /* Near Black */
+  --color-ink-700: #374151; /* Slate 700 */
+  --color-ink-500: #6b7280; /* Slate 500 */
+  --color-ink-300: #b2b2b2; /* Grey 300 */
 
+  /* Map pseudo-palette (decorative) */
   --color-map-road: #ffffff;
-  --color-map-water: #d7def6;
-  --color-map-park: #e1ecda;
-  --color-map-label: #9095b5;
+  --color-map-water: #e9f2fe; /* Blue Wash */
+  --color-map-park: #e8f6ef;  /* Green Wash */
+  --color-map-label: #9ca3af; /* Slate 400 */
 
   --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: ui-monospace, "SFMono-Regular", Menlo, monospace;
 
-  --shadow-glass: 0 8px 32px rgba(82, 63, 160, 0.1);
-  --shadow-fab: 0 8px 24px rgba(82, 63, 160, 0.18);
-  --shadow-cta: 0 8px 24px rgba(107, 60, 255, 0.35);
+  --shadow-glass: 0 8px 32px rgba(204, 13, 90, 0.12);
+  --shadow-fab: 0 8px 24px rgba(204, 13, 90, 0.18);
+  --shadow-cta: 0 8px 24px rgba(223, 0, 89, 0.35);
 }
 
 :root {
+  /* Route polyline gradient — pink-based, matching brand */
   --grad-route: linear-gradient(
     90deg,
-    #5ab8ff 0%,
-    #8e66ff 60%,
-    #6b3cff 100%
+    #237af9 0%,
+    #df0059 65%,
+    #cc0d5a 100%
   );
+  /* Splash (REF 3) — pink wash */
   --grad-splash: linear-gradient(
     160deg,
-    #c5b8ff 0%,
-    #f1b8e3 50%,
-    #b8d6ff 100%
+    #ffe9f2 0%,
+    #f5cfde 45%,
+    #e9f2fe 100%
   );
-  --grad-cta: linear-gradient(135deg, #8e66ff 0%, #6b3cff 100%);
+  /* Primary CTA */
+  --grad-cta: linear-gradient(135deg, #df0059 0%, #cc0d5a 100%);
+  /* Glass card */
   --grad-card-glass: linear-gradient(
     180deg,
-    rgba(255, 255, 255, 0.72) 0%,
-    rgba(255, 255, 255, 0.55) 100%
+    rgba(255, 255, 255, 0.78) 0%,
+    rgba(255, 255, 255, 0.58) 100%
   );
 }
 
@@ -86,11 +95,3 @@ body {
   animation: ping-slow 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
 
-@keyframes draw-line {
-  from {
-    stroke-dashoffset: var(--route-len, 1000);
-  }
-  to {
-    stroke-dashoffset: 0;
-  }
-}

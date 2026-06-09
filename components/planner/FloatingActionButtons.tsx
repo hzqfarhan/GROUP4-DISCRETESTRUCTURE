@@ -10,8 +10,8 @@ export function FloatingActionButtons() {
   return (
     <div className="absolute bottom-44 right-4 z-20 flex flex-col gap-3">
       {[
-        { icon: Apple, color: "text-accent-coral", label: "food" },
-        { icon: Trophy, color: "text-accent-amber", label: "sports" },
+        { icon: Apple, color: "text-primary-500", label: "food" },
+        { icon: Trophy, color: "text-primary-500", label: "sports" },
         { icon: Home, color: "text-primary-500", label: "home" },
       ].map(({ icon: Icon, color, label }) => (
         <button
@@ -19,12 +19,12 @@ export function FloatingActionButtons() {
           type="button"
           onClick={() => onTap(label)}
           className={
-            "flex h-14 w-14 items-center justify-center rounded-full bg-white " +
-            "shadow-[0_8px_24px_rgba(82,63,160,0.18)] active:scale-95 transition-transform"
+            "flex h-11 w-11 items-center justify-center rounded-full bg-white " +
+            "shadow-[0_4px_14px_rgba(204,13,90,0.20)] active:scale-95 transition-transform"
           }
           aria-label={label}
         >
-          <Icon className={`h-6 w-6 ${color}`} strokeWidth={2.2} />
+          <Icon className={`h-5 w-5 ${color}`} strokeWidth={2.2} />
         </button>
       ))}
     </div>

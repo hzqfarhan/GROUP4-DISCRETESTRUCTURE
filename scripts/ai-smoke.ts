@@ -1,47 +1,40 @@
-// Smoke-test the AI model + OSRM integration with the real env.
-// Run: npx tsx scripts/ai-smoke.ts
+// Real-world AI smoke: ask Ollama to build a graph for KL -> Penang.
 import { fetchDynamicGraph } from "../lib/ai/ollama";
-import { fetchOsrmRoute } from "../lib/routing/osrm";
-
-const apiKey = process.env.OLLAMA_CLOUD_API_KEY;
-const model = process.env.OLLAMA_CLOUD_MODEL ?? "minimax-m3";
-const baseUrl =
-  process.env.OLLAMA_CLOUD_BASE_URL ?? "https://api.ollama.cloud/v1";
-
-if (!apiKey) {
-  console.error("OLLAMA_CLOUD_API_KEY not set — skipping AI smoke test");
-  process.exit(0);
-}
 
 async function main() {
-  console.log(`\n=== AI: ${model} ===`);
-  const graph = await fetchDynamicGraph(
-    "Kuala Lumpur",
-    "George Town, Penang",
-    apiKey!,
-    model,
-    baseUrl,
-  );
-  console.log(`Junctions: ${graph.junctions.length}, Edges: ${graph.edges.length}`);
-  console.log("First 3:", graph.junctions.slice(0, 3).map((j) => j.name).join(" → "));
+  const key = process.env.OLLAMA_CLOUD_API_KEY!;
+  const model = process.env.OLLAMA_CLOUD_MODEL ?? "minimax-m3";
+  const baseUrl = process.env.OLLAMA_CLOUD_BASE_URL ?? "https://ollama.com/v1";
 
-  console.log("\n=== OSRM: KL -> George Town ===");
-  const kl = graph.junctions.find((j) => j.name.toLowerCase().includes("kuala"))!;
-  const penang = graph.junctions.find((j) => j.name.toLowerCase().includes("george") || j.name.toLowerCase().includes("penang"))!;
-  const osrm = await fetchOsrmRoute([
-    { lat: kl.lat!, lng: kl.lng! },
-    { lat: penang.lat!, lng: penang.lng! },
-  ]);
-  if (osrm) {
-    console.log(`Distance: ${(osrm.distanceMeters / 1000).toFixed(1)} km`);
-    console.log(`Duration: ${Math.round(osrm.durationSeconds / 60)} min`);
-    console.log(`Polyline points: ${osrm.geometry.length}`);
-  } else {
-    console.log("OSRM call failed");
+  if (!key) {
+    console.error("OLLAMA_CLOUD_API_KEY not set");
+    process.exit(1);
+  }
+
+  console.log(`Probing: ${baseUrl}/chat/completions (model=${model})`);
+  const t0 = Date.now();
+  try {
+    const graph = await fetchDynamicGraph(
+      "Kuala Lumpur",
+      "George Town, Penang",
+      key,
+      model,
+      baseUrl,
+    );
+    const dt = Date.now() - t0;
+    console.log(`\n✅ OK in ${dt}ms`);
+    console.log(`Junctions (${graph.junctions.length}):`);
+    graph.junctions.forEach((j) => console.log(`  - ${j.id}: ${j.name}`));
+    console.log(`Edges (${graph.edges.length}):`);
+    graph.edges.forEach((e) =>
+      console.log(
+        `  - ${e.id}: ${e.from} → ${e.to} · ${e.distanceKm}km · ${e.timeMin}m · RM${e.tollRM} · ${e.roadType}`,
+      ),
+    );
+  } catch (e) {
+    console.error(`❌ FAILED: ${(e as Error).message}`);
+    process.exit(1);
   }
 }
 
-main().catch((e) => {
-  console.error("Smoke test failed:", e);
-  process.exit(1);
-});
+main();

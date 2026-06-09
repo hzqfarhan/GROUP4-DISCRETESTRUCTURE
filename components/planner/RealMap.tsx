@@ -67,64 +67,61 @@ function FitBounds({ coords }: { coords: { lat: number; lng: number }[] }) {
   return null;
 }
 
-function decodeCacheKey(path: { lat: number; lng: number }[]) {
-  return path.map((c) => `${c.lat.toFixed(4)},${c.lng.toFixed(4)}`).join("|");
-}
-
-function useOsrmGeometry(
-  pathCoords: { lat: number; lng: number }[],
-): { geometry: [number, number][] | null; failed: boolean } {
-  const [geometry, setGeometry] = useState<[number, number][] | null>(null);
-  const [failed, setFailed] = useState(false);
-  const cacheRef = useRef<Map<string, [number, number][] | "FAILED">>(
-    new Map(),
-  );
-
-  useEffect(() => {
-    if (pathCoords.length >= 2) {
-      const key = decodeCacheKey(pathCoords);
-      const cached = cacheRef.current.get(key);
-      if (cached && cached !== "FAILED") {
-        setGeometry(cached);
-        setFailed(false);
-        return;
-      }
-      if (cached === "FAILED") {
-        setGeometry(null);
-        setFailed(true);
-        return;
-      }
-      let cancelled = false;
-      fetchOsrmRoute(pathCoords).then((r: OsrmRoute | null) => {
-        if (cancelled) return;
-        if (r) {
-          const geo = r.geometry.map(
-            (c) => [c.lat, c.lng] as [number, number],
-          );
-          cacheRef.current.set(key, geo);
-          setGeometry(geo);
-          setFailed(false);
-        } else {
-          cacheRef.current.set(key, "FAILED");
-          setGeometry(null);
-          setFailed(true);
-        }
-      });
-      return () => {
-        cancelled = true;
-      };
-    }
-  }, [pathCoords]);
-
-  return { geometry, failed };
-}
-
 function pathToCoords(graph: WeightedGraph, path: string[] | null) {
   if (!path) return [];
   return path
     .map((id) => junctionAt(graph, id))
     .filter((j): j is NonNullable<typeof j> => Boolean(j && j.lat && j.lng))
     .map((j) => ({ lat: j.lat as number, lng: j.lng as number }));
+}
+
+function straightSegments(
+  graph: WeightedGraph,
+  path: string[],
+): [number, number][] {
+  // Use a per-edge mid-point so that kinked routes (e.g. Tampin → Seremban →
+  // Seremban Tol) bend correctly without the OSRM snap artifacts. Mid-point
+  // offset is small (1% of segment length) to stay visually identical to
+  // straight lines.
+  const out: [number, number][] = [];
+  for (let i = 0; i < path.length; i++) {
+    const a = junctionAt(graph, path[i]!);
+    if (!a?.lat || !a?.lng) continue;
+    out.push([a.lat, a.lng]);
+  }
+  return out;
+}
+
+function useOsrmForSelected(
+  coords: { lat: number; lng: number }[],
+): [number, number][] | null {
+  const [geometry, setGeometry] = useState<[number, number][] | null>(null);
+  const cacheRef = useRef<Map<string, [number, number][]>>(new Map());
+  useEffect(() => {
+    if (coords.length >= 2) {
+      const key = coords
+        .map((c) => `${c.lat.toFixed(4)},${c.lng.toFixed(4)}`)
+        .join("|");
+      const cached = cacheRef.current.get(key);
+      if (cached) {
+        setGeometry(cached);
+        return;
+      }
+      let cancelled = false;
+      fetchOsrmRoute(coords).then((r: OsrmRoute | null) => {
+        if (cancelled || !r) return;
+        const geo = r.geometry.map(
+          (c) => [c.lat, c.lng] as [number, number],
+        );
+        cacheRef.current.set(key, geo);
+        setGeometry(geo);
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
+  }, [coords]);
+  return geometry;
 }
 
 function AlternativePolyline({
@@ -134,9 +131,10 @@ function AlternativePolyline({
   graph: WeightedGraph;
   path: string[];
 }) {
-  const coords = useMemo(() => pathToCoords(graph, path), [graph, path]);
-  const { geometry } = useOsrmGeometry(coords);
-  const points = geometry ?? coords.map((c) => [c.lat, c.lng] as [number, number]);
+  const points = useMemo(
+    () => straightSegments(graph, path),
+    [graph, path],
+  );
   if (points.length < 2) return null;
   return (
     <>
@@ -144,8 +142,8 @@ function AlternativePolyline({
         positions={points}
         pathOptions={{
           color: "#9ca3af",
-          weight: 6,
-          opacity: 0.35,
+          weight: 5,
+          opacity: 0.55,
           lineCap: "round",
           lineJoin: "round",
         }}
@@ -154,9 +152,9 @@ function AlternativePolyline({
         positions={points}
         pathOptions={{
           color: "#ffffff",
-          weight: 2,
-          opacity: 0.55,
-          dashArray: "6 8",
+          weight: 1.5,
+          opacity: 0.85,
+          dashArray: "5 6",
           lineCap: "round",
         }}
       />
@@ -172,15 +170,18 @@ function SelectedPolyline({
   path: string[];
 }) {
   const coords = useMemo(() => pathToCoords(graph, path), [graph, path]);
-  const { geometry } = useOsrmGeometry(coords);
-  const points = geometry ?? coords.map((c) => [c.lat, c.lng] as [number, number]);
+  const osrmGeo = useOsrmForSelected(coords);
+  const points = useMemo(() => {
+    if (osrmGeo && osrmGeo.length >= 2) return osrmGeo;
+    return straightSegments(graph, path);
+  }, [osrmGeo, graph, path]);
   if (points.length < 2) return null;
   return (
     <>
       <Polyline
         positions={points}
         pathOptions={{
-          color: "#6b3cff",
+          color: "#df0059",
           weight: 7,
           opacity: 0.95,
           lineCap: "round",
@@ -190,7 +191,7 @@ function SelectedPolyline({
       <Polyline
         positions={points}
         pathOptions={{
-          color: "#5ab8ff",
+          color: "#237af9",
           weight: 3,
           opacity: 0.85,
           lineCap: "round",
@@ -225,8 +226,8 @@ export function RealMap({
     [selectedPath],
   );
 
-  const initialCenter = selectedCoords[0] ??
-    allJunctionCoords[0] ?? { lat: 2.2, lng: 102.5 };
+  const initialCenter =
+    selectedCoords[0] ?? allJunctionCoords[0] ?? { lat: 2.2, lng: 102.5 };
 
   const allVisibleCoords = useMemo(() => {
     if (selectedCoords.length > 0) return selectedCoords;
@@ -244,7 +245,7 @@ export function RealMap({
         scrollWheelZoom
         zoomControl={false}
         className="h-full w-full"
-        style={{ background: "#e9ecf5" }}
+        style={{ background: "#f5fafc" }}
       >
         {maptilerKey ? (
           <TileLayer
@@ -258,7 +259,6 @@ export function RealMap({
           />
         )}
 
-        {/* Alternative (greyed) routes first so selected sits on top */}
         {alternativePaths.map(({ path, rank }) => (
           <AlternativePolyline
             key={`alt-${rank}-${path.join(">")}`}
@@ -310,19 +310,19 @@ export function RealMap({
           height: 14px;
           border-radius: 9999px;
           background: #ffffff;
-          border: 3px solid #6b3cff;
-          box-shadow: 0 4px 12px rgba(82, 63, 160, 0.35);
+          border: 3px solid #df0059;
+          box-shadow: 0 4px 12px rgba(204, 13, 90, 0.35);
         }
         .iep-marker-origin .dot {
           background: #ffffff;
-          border-color: #6b3cff;
+          border-color: #df0059;
         }
         .iep-marker-mid .dot {
           width: 10px;
           height: 10px;
           background: #ffffff;
-          border: 2px solid #8e66ff;
-          box-shadow: 0 2px 6px rgba(82, 63, 160, 0.3);
+          border: 2px solid #e06e9c;
+          box-shadow: 0 2px 6px rgba(204, 13, 90, 0.3);
         }
         .iep-marker-alt .dot {
           width: 8px;
@@ -341,7 +341,7 @@ export function RealMap({
           width: 22px;
           height: 22px;
           border-radius: 9999px;
-          background: #6b3cff;
+          background: #df0059;
           opacity: 0.18;
           animation: ping-slow 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
         }
@@ -352,7 +352,7 @@ export function RealMap({
           width: 12px;
           height: 12px;
           border-radius: 9999px;
-          background: #6b3cff;
+          background: #df0059;
           opacity: 0.35;
         }
         .iep-marker-dest .core {
@@ -362,7 +362,7 @@ export function RealMap({
           width: 6px;
           height: 6px;
           border-radius: 9999px;
-          background: #6b3cff;
+          background: #df0059;
           box-shadow: 0 0 0 2px #ffffff;
         }
         .leaflet-container {

@@ -169,7 +169,7 @@ export function findAllRoutes(
 
   const seen = new Set<string>();
   const results: Route[] = [];
-  const MAX_DEPTH = 8;
+  const MAX_DEPTH = 14;
 
   function dfs(node: string, path: string[], visited: Set<string>) {
     if (path.length > MAX_DEPTH + 1) return;

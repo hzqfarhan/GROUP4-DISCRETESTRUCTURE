@@ -2,11 +2,10 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { findAllRoutes } from "@/lib/graph/dijkstra";
 import { computeTripStats } from "@/lib/graph/stats";
-import { getHardcodedGraph, isHardcodedPair } from "@/lib/graph/store";
+import { resolveHardcodedPair } from "@/lib/graph/store";
 import { resolveJunctionId, roadTypesForRoute } from "@/lib/graph/resolver";
 import { fetchDynamicGraph } from "@/lib/ai/ollama";
 import { fetchOsrmRoute } from "@/lib/routing/osrm";
-import { UTHM_SENDAYAN_PAIR } from "@/lib/graph/uthm-sendayan";
 import type {
   PlanResponse,
   RealRoadGeometry,
@@ -67,15 +66,20 @@ export async function POST(request: Request) {
 
   let graph: WeightedGraph;
   let source: "hardcoded" | "ai";
+  let hardcodedOriginId: string | undefined;
+  let hardcodedDestId: string | undefined;
 
-  if (isHardcodedPair(origin, destination)) {
-    graph = getHardcodedGraph();
+  const hardcoded = resolveHardcodedPair(origin, destination);
+  if (hardcoded) {
+    graph = hardcoded.graph;
     source = "hardcoded";
+    hardcodedOriginId = hardcoded.originId;
+    hardcodedDestId = hardcoded.destinationId;
   } else {
     const apiKey = process.env.OLLAMA_CLOUD_API_KEY;
     const model = process.env.OLLAMA_CLOUD_MODEL ?? "minimax-m3";
     const baseUrl =
-      process.env.OLLAMA_CLOUD_BASE_URL ?? "https://api.ollama.cloud/v1";
+      process.env.OLLAMA_CLOUD_BASE_URL ?? "https://ollama.com/v1";
     if (!apiKey) {
       return NextResponse.json(
         {
@@ -105,12 +109,9 @@ export async function POST(request: Request) {
     }
   }
 
-  const originId = isHardcodedPair(origin, destination)
-    ? UTHM_SENDAYAN_PAIR.originId
-    : resolveJunctionId(graph, origin);
-  const destinationId = isHardcodedPair(origin, destination)
-    ? UTHM_SENDAYAN_PAIR.destinationId
-    : resolveJunctionId(graph, destination);
+  const originId = hardcodedOriginId ?? resolveJunctionId(graph, origin);
+  const destinationId =
+    hardcodedDestId ?? resolveJunctionId(graph, destination);
 
   if (!originId || !destinationId) {
     return NextResponse.json(
@@ -122,7 +123,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const routes = findAllRoutes(graph, originId, destinationId, mode, 5);
+  const routes = findAllRoutes(graph, originId, destinationId, mode, 8);
   if (routes.length === 0) {
     return NextResponse.json(
       { error: "No route found between the given points.", graph },
@@ -137,8 +138,6 @@ export async function POST(request: Request) {
     roadTypesForRoute(graph, recommended),
   );
 
-  // Real-road geometry for every route (in parallel). Failures are silent —
-  // the UI just shows graph distances for that route.
   const realRoads: (RealRoadGeometry | null)[] = await Promise.all(
     routes.map((r) => routeRealRoad(graph, r)),
   );
@@ -154,4 +153,3 @@ export async function POST(request: Request) {
   };
   return NextResponse.json(response);
 }
-

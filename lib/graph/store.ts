@@ -1,18 +1,14 @@
 import type { WeightedGraph } from "./types";
-import {
-  UTHM_SENDAYAN_GRAPH,
-  UTHM_SENDAYAN_PAIR,
-} from "./uthm-sendayan";
+import { HARDCODED_PAIRS, resolveHardcodedPair } from "./registry";
 
 export function isHardcodedPair(origin: string, destination: string): boolean {
-  const o = origin.trim().toLowerCase();
-  const d = destination.trim().toLowerCase();
-  return (
-    o === UTHM_SENDAYAN_PAIR.origin.toLowerCase() &&
-    d === UTHM_SENDAYAN_PAIR.destination.toLowerCase()
-  );
+  return resolveHardcodedPair(origin, destination) !== null;
 }
 
 export function getHardcodedGraph(): WeightedGraph {
-  return UTHM_SENDAYAN_GRAPH;
+  const fallback = HARDCODED_PAIRS[0];
+  if (!fallback) throw new Error("No hardcoded pairs registered");
+  return fallback.graph;
 }
+
+export { resolveHardcodedPair, HARDCODED_PAIRS };
