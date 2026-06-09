@@ -1,7 +1,8 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import {
+  Search,
   ArrowLeftRight,
   X,
   ChevronRight,
@@ -9,10 +10,18 @@ import {
   Clock,
   Coins,
   Pencil,
+  Plus,
+  Minus,
+  Crosshair,
+  Layers,
+  Utensils,
+  Hotel,
+  Camera,
+  Mountain,
+  Bus,
 } from "lucide-react";
 import { StatusBar } from "@/components/ui/StatusBar";
 import { PhoneFrame } from "@/components/ui/PhoneFrame";
-import { FloatingActionButtons } from "@/components/planner/FloatingActionButtons";
 import { PriorityToggle } from "@/components/planner/PriorityToggle";
 import { PrimaryButton } from "@/components/ui/PrimaryButton";
 import { RouteListItem } from "@/components/planner/RouteListItem";
@@ -46,10 +55,18 @@ function useResponsiveMode(): Mode {
   return mode;
 }
 
+const CATEGORY_CHIPS = [
+  { label: "Restaurants", icon: Utensils },
+  { label: "Hotels", icon: Hotel },
+  { label: "Things to do", icon: Camera },
+  { label: "Museums", icon: Mountain },
+  { label: "Transit", icon: Bus },
+] as const;
+
 export default function PlannerPage() {
   const responsive = useResponsiveMode();
+  const mapRef = useRef<{ zoomIn: () => void; zoomOut: () => void; recenter: () => void }>(null);
 
-  // Start with empty inputs — the user picks a suggestion or types their own.
   const [origin, setOrigin] = useState<string>("");
   const [destination, setDestination] = useState<string>("");
   const [mode, setMode] = useState<OptimizationMode>("time");
@@ -60,6 +77,7 @@ export default function PlannerPage() {
   const [snap, setSnap] = useState<Snap>("collapsed");
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [editing, setEditing] = useState<null | "origin" | "destination">(null);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const maptilerKey = process.env.NEXT_PUBLIC_MAPTILER_KEY || undefined;
 
@@ -97,6 +115,7 @@ export default function PlannerPage() {
       setResult(data);
       setSelectedIdx(0);
       setSnap("half");
+      setSearchOpen(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
@@ -126,6 +145,7 @@ export default function PlannerPage() {
     setOrigin(p.origin);
     setDestination(p.destination);
     setError(null);
+    setSearchOpen(false);
   }
 
   const dist = selectedRealRoad?.distanceKm ?? result?.recommended.totalDistanceKm;
@@ -134,329 +154,275 @@ export default function PlannerPage() {
     : result?.stats.timeMin;
   const toll = result?.stats.tollRM ?? 0;
 
-  const desktopSidebar = (
-    <aside className="relative z-20 flex h-full w-[280px] shrink-0 flex-col border-l border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(255,255,255,0.88)_100%)] backdrop-blur-xl">
-      {/* Compact header */}
-      <header className="flex shrink-0 items-center justify-between border-b border-ink-300/10 px-3 py-1.5">
-        <h1 className="text-xs font-bold text-ink-900">IEP</h1>
-        <span className="rounded-full bg-primary-50 px-1.5 py-0.5 text-[9px] font-semibold text-primary-600">
-          β = {mode === "time" ? "0.5" : "2.5"}
-        </span>
-      </header>
-
-      {/* Origin / Destination row */}
-      <div className="shrink-0 px-2.5 pt-2">
-        <div className="mb-1 flex items-center justify-between px-0.5">
-          <span className="text-[8px] font-semibold uppercase tracking-wider text-ink-500">
-            AI: ollama.com · minimax-m3
-          </span>
-          <span className="flex items-center gap-1 text-[8px] font-semibold uppercase tracking-wider text-primary-600">
-            <span className="h-1 w-1 rounded-full bg-primary-500" />
-            online
-          </span>
+  // ============================
+  // Google-Maps-style top search bar
+  // ============================
+  const TopSearchBar = (
+    <div className="pointer-events-auto absolute left-0 right-0 top-3 z-30 flex flex-col gap-2 px-3 sm:top-4 sm:px-4">
+      <div className="flex items-center gap-2">
+        <div
+          className={
+            "flex h-12 flex-1 items-center gap-2 rounded-full border border-white/60 bg-white/95 px-4 shadow-[0_4px_16px_rgba(82,63,160,0.12)] backdrop-blur-xl " +
+            (searchOpen ? "ring-2 ring-primary-200" : "")
+          }
+        >
+          <Search className="h-4 w-4 shrink-0 text-primary-500" strokeWidth={2.6} />
+          <button
+            type="button"
+            onClick={() => setSearchOpen((v) => !v)}
+            className="flex-1 truncate text-left text-sm font-semibold text-ink-900"
+          >
+            {origin || destination
+              ? `${origin || "Origin"} → ${destination || "Destination"}`
+              : "Search UTHM → Masjid Sri Sendayan"}
+          </button>
+          {(origin || destination) && (
+            <button
+              type="button"
+              onClick={handleClear}
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-ink-500 hover:bg-primary-50 hover:text-primary-500"
+              aria-label="Clear"
+              title="Clear"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
-        {editing === "origin" || editing === "destination" ? (
-          <input
-            autoFocus
-            value={editing === "origin" ? origin : destination}
-            onChange={(e) =>
-              editing === "origin"
-                ? setOrigin(e.target.value)
-                : setDestination(e.target.value)
-            }
-            onBlur={() => setEditing(null)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === "Escape") {
-                setEditing(null);
-              }
-            }}
-            className="w-full rounded-lg border border-primary-200 bg-white/90 px-2 py-1 text-[11px] text-ink-900 focus:border-primary-500 focus:outline-none"
-            placeholder="Type a place…"
-          />
-        ) : (
-          <div className="flex items-center gap-1 rounded-lg border border-white/60 bg-white/70 px-1.5 py-1">
+      </div>
+
+      {/* Category chips (Google-Maps style) */}
+      <div className="hide-scrollbar flex gap-2 overflow-x-auto pb-1">
+        {CATEGORY_CHIPS.map((chip) => {
+          const Icon = chip.icon;
+          return (
+            <button
+              key={chip.label}
+              type="button"
+              className="flex shrink-0 items-center gap-1.5 rounded-full border border-white/60 bg-white/85 px-3 py-1.5 text-xs font-semibold text-ink-700 shadow-[0_2px_6px_rgba(82,63,160,0.06)] backdrop-blur-xl active:scale-95"
+            >
+              <Icon className="h-3.5 w-3.5 text-primary-500" strokeWidth={2.2} />
+              {chip.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Expanded search panel */}
+      {searchOpen && (
+        <div className="rounded-2xl border border-white/60 bg-white/95 p-2.5 shadow-[0_8px_24px_rgba(82,63,160,0.12)] backdrop-blur-xl">
+          <div className="flex items-center gap-1.5">
             <button
               type="button"
               onClick={() => setEditing("origin")}
-              className="group flex min-w-0 flex-1 items-center gap-1 rounded px-1 py-0.5 hover:bg-primary-50/60"
-              title="Edit origin"
+              className="group flex min-w-0 flex-1 items-center gap-1.5 rounded-full bg-surface-map px-3 py-2 text-left text-xs font-semibold text-ink-900 hover:bg-primary-50"
             >
               <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary-500" />
               <span
                 className={
-                  "truncate text-[10px] font-semibold " +
-                  (origin ? "text-ink-900" : "text-ink-300 italic")
+                  "flex-1 truncate " +
+                  (origin ? "" : "text-ink-300 italic")
                 }
               >
-                {origin || "Click to type origin"}
+                {origin || "Type origin"}
               </span>
-              <Pencil className="h-2.5 w-2.5 shrink-0 text-ink-300 group-hover:text-primary-500" />
+              <Pencil className="h-3 w-3 shrink-0 text-ink-300 group-hover:text-primary-500" />
             </button>
             <button
               type="button"
               onClick={handleSwap}
-              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/80 text-ink-500 hover:text-primary-500"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-ink-500 shadow-sm hover:text-primary-500"
               aria-label="Swap"
-              title="Swap"
             >
-              <ArrowLeftRight className="h-2.5 w-2.5" />
+              <ArrowLeftRight className="h-3.5 w-3.5" />
             </button>
             <button
               type="button"
               onClick={() => setEditing("destination")}
-              className="group flex min-w-0 flex-1 items-center gap-1 rounded px-1 py-0.5 hover:bg-primary-50/60"
-              title="Edit destination"
+              className="group flex min-w-0 flex-1 items-center gap-1.5 rounded-full bg-surface-map px-3 py-2 text-left text-xs font-semibold text-ink-900 hover:bg-primary-50"
             >
               <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary-500" />
               <span
                 className={
-                  "truncate text-[10px] font-semibold " +
-                  (destination ? "text-ink-900" : "text-ink-300 italic")
+                  "flex-1 truncate " +
+                  (destination ? "" : "text-ink-300 italic")
                 }
               >
-                {destination || "Click to type destination"}
+                {destination || "Type destination"}
               </span>
-              <Pencil className="h-2.5 w-2.5 shrink-0 text-ink-300 group-hover:text-primary-500" />
+              <Pencil className="h-3 w-3 shrink-0 text-ink-300 group-hover:text-primary-500" />
             </button>
             <button
               type="button"
-              onClick={handleClear}
-              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/80 text-ink-500 hover:text-primary-500"
-              aria-label="Reset"
-              title="Reset"
+              onClick={() => {
+                setSearchOpen(false);
+                setEditing(null);
+              }}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-ink-500 shadow-sm"
+              aria-label="Close"
             >
-              <X className="h-2.5 w-2.5" />
+              <X className="h-4 w-4" />
             </button>
           </div>
-        )}
-        <div className="mt-1 px-1 text-[9px] text-ink-500">
-          {result
-            ? "Route loaded · type any place above to try a different one"
-            : "Pick a suggested pair below, or type your own places above"}
-        </div>
-      </div>
 
-      {/* Priority + Find button on one row */}
-      <div className="shrink-0 px-2.5 pt-2">
-        <div className="flex items-center gap-1.5">
-          <div className="flex-1">
-            <PriorityToggle mode={mode} onChange={setMode} />
-          </div>
-          <PrimaryButton
-            onClick={handleFind}
-            loading={loading}
-            disabled={!canFind}
-            size="sm"
-            className="!w-auto !px-4"
-          >
-            Find
-          </PrimaryButton>
-        </div>
-        {error && (
-          <div className="mt-1.5">
-            <ErrorBanner message={error} />
-          </div>
-        )}
-      </div>
-
-      {/* Recommended bento — 1 line, clickable */}
-      {result && (
-        <button
-          type="button"
-          onClick={() => setDetailsOpen(true)}
-          className="mx-2.5 mt-1.5 shrink-0 rounded-xl border border-white/60 bg-[linear-gradient(135deg,#df0059_0%,#cc0d5a_100%)] px-2.5 py-1.5 text-left text-white shadow-[0_4px_12px_rgba(223,0,89,0.30)] active:scale-[0.99]"
-        >
-          <div className="flex items-center justify-between text-[9px] font-semibold uppercase tracking-wider opacity-80">
-            <span>Recommended</span>
-            <ChevronRight className="h-3 w-3" />
-          </div>
-          <div className="mt-0.5 flex items-end gap-3 tabular-nums">
-            <MiniStat icon={<Clock className="h-2.5 w-2.5" />} label="Time" value={durMin ? fmtDur(durMin) : "—"} />
-            <MiniStat icon={<MapPinned className="h-2.5 w-2.5" />} label="Dist" value={dist ? `${dist.toFixed(1)}km` : "—"} />
-            <MiniStat icon={<Coins className="h-2.5 w-2.5" />} label="Toll" value={toll ? `RM${toll.toFixed(0)}` : "—"} />
-          </div>
-        </button>
-      )}
-
-      {/* Routes list */}
-      {result && result.routes.length > 0 && (
-        <div className="mt-1.5 flex min-h-0 flex-1 flex-col px-2.5">
-          <div className="flex items-center justify-between px-1 pb-1 text-[9px] font-semibold uppercase tracking-wider text-ink-500">
-            <span>All routes</span>
-            <span className="text-ink-300 normal-case tracking-normal">
-              {result.routes.length}
-            </span>
-          </div>
-          <div className="flex-1 space-y-1 overflow-y-auto pb-2 pr-0.5">
-            {result.routes.map((r, i) => (
-              <RouteListItem
-                key={`${r.edgeIds.join("-")}-${i}`}
-                rank={i + 1}
-                route={r}
-                graph={result.graph}
-                realRoad={result.realRoads?.[i] ?? null}
-                isSelected={i === selectedIdx}
-                onSelect={() => setSelectedIdx(i)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* No result state — big suggestion buttons */}
-      {!result && (
-        <div className="mt-2 flex-1 overflow-y-auto px-2.5 pb-2">
           <PairSuggestions
             onPick={pickPair}
             onTypeOrigin={() => setEditing("origin")}
             onTypeDestination={() => setEditing("destination")}
           />
-          <div className="mt-2">
-            <FormulaExplainer mode={mode} />
-          </div>
         </div>
       )}
-    </aside>
+    </div>
   );
 
-  if (responsive === "desktop") {
-    return (
-      <>
-        <div className="relative flex h-screen w-full overflow-hidden bg-surface-base">
-          <div className="relative flex-1">
-            <RealMap
-              graph={result?.graph ?? { junctions: [], edges: [] }}
-              selectedPath={selectedRoute?.path ?? null}
-              alternativePaths={alternativePaths}
-              originLabel={origin}
-              destinationLabel={destination}
-              maptilerKey={maptilerKey}
-            />
-          </div>
-          {desktopSidebar}
-        </div>
-        {result && (
-          <RouteDetailsModal
-            open={detailsOpen}
-            onClose={() => setDetailsOpen(false)}
-            result={result}
-            selectedIdx={selectedIdx}
-            onSelectRoute={(i) => setSelectedIdx(i)}
-          />
-        )}
-      </>
-    );
-  }
+  // ============================
+  // Right-side map controls (Google-Maps style)
+  // ============================
+  const RightControls = (
+    <div className="absolute bottom-44 right-3 z-20 flex flex-col gap-2 sm:right-4 sm:bottom-48">
+      <button
+        type="button"
+        onClick={() => mapRef.current?.zoomIn()}
+        aria-label="Zoom in"
+        className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-primary-500 shadow-[0_4px_14px_rgba(82,63,160,0.18)] active:scale-95"
+      >
+        <Plus className="h-4 w-4" strokeWidth={2.4} />
+      </button>
+      <button
+        type="button"
+        onClick={() => mapRef.current?.zoomOut()}
+        aria-label="Zoom out"
+        className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-primary-500 shadow-[0_4px_14px_rgba(82,63,160,0.18)] active:scale-95"
+      >
+        <Minus className="h-4 w-4" strokeWidth={2.4} />
+      </button>
+      <button
+        type="button"
+        onClick={() => mapRef.current?.recenter()}
+        aria-label="Recenter"
+        className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-primary-500 shadow-[0_4px_14px_rgba(82,63,160,0.18)] active:scale-95"
+      >
+        <Crosshair className="h-4 w-4" strokeWidth={2.4} />
+      </button>
+      <button
+        type="button"
+        onClick={() => mapRef.current?.recenter()}
+        aria-label="Layers"
+        className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-primary-500 shadow-[0_4px_14px_rgba(82,63,160,0.18)] active:scale-95"
+      >
+        <Layers className="h-4 w-4" strokeWidth={2.4} />
+      </button>
+    </div>
+  );
 
-  // Mobile: iPhone shell + bottom sheet
-  const mobileSheet = (
+  // ============================
+  // Recommended bento — clickable, opens detail modal
+  // ============================
+  const RecommendedBento = result && (
+    <button
+      type="button"
+      onClick={() => setDetailsOpen(true)}
+      className="w-full rounded-2xl border border-white/60 bg-[linear-gradient(135deg,#df0059_0%,#cc0d5a_100%)] p-3 text-left text-white shadow-[0_6px_18px_rgba(223,0,89,0.30)] active:scale-[0.99]"
+    >
+      <div className="flex items-center justify-between text-[9px] font-semibold uppercase tracking-wider opacity-80">
+        <span>Recommended</span>
+        <ChevronRight className="h-3 w-3" />
+      </div>
+      <div className="mt-1 grid grid-cols-3 gap-2 tabular-nums">
+        <MiniStat icon={<Clock className="h-2.5 w-2.5" />} label="Time" value={durMin ? fmtDur(durMin) : "—"} />
+        <MiniStat icon={<MapPinned className="h-2.5 w-2.5" />} label="Dist" value={dist ? `${dist.toFixed(1)} km` : "—"} />
+        <MiniStat icon={<Coins className="h-2.5 w-2.5" />} label="Toll" value={toll ? `RM${toll.toFixed(0)}` : "—"} />
+      </div>
+    </button>
+  );
+
+  // ============================
+  // Inline input row used in the bottom sheet (mobile)
+  // ============================
+  const MobileInputRow = editing !== null ? (
+    <input
+      autoFocus
+      value={editing === "origin" ? origin : destination}
+      onChange={(e) =>
+        editing === "origin"
+          ? setOrigin(e.target.value)
+          : setDestination(e.target.value)
+      }
+      onBlur={() => setEditing(null)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === "Escape") {
+          setEditing(null);
+        }
+      }}
+      className="w-full rounded-xl border border-primary-200 bg-white/90 px-3 py-2 text-xs text-ink-900 focus:border-primary-500 focus:outline-none"
+      placeholder="Type a place…"
+    />
+  ) : (
+    <div className="flex items-center gap-1 rounded-xl border border-white/60 bg-white/80 p-1.5">
+      <button
+        type="button"
+        onClick={() => setEditing("origin")}
+        className="flex flex-1 items-center gap-1 truncate rounded px-1 py-0.5 text-[11px] font-semibold"
+      >
+        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary-500" />
+        <span className={"truncate " + (origin ? "text-ink-900" : "text-ink-300 italic")}>
+          {origin || "Type origin"}
+        </span>
+        <Pencil className="h-2.5 w-2.5 shrink-0 text-ink-300" />
+      </button>
+      <button
+        type="button"
+        onClick={handleSwap}
+        className="flex h-6 w-6 items-center justify-center rounded-full bg-white/80 text-ink-500"
+        aria-label="Swap"
+      >
+        <ArrowLeftRight className="h-3 w-3" />
+      </button>
+      <button
+        type="button"
+        onClick={() => setEditing("destination")}
+        className="flex flex-1 items-center gap-1 truncate rounded px-1 py-0.5 text-[11px] font-semibold"
+      >
+        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary-500" />
+        <span className={"truncate " + (destination ? "text-ink-900" : "text-ink-300 italic")}>
+          {destination || "Type destination"}
+        </span>
+        <Pencil className="h-2.5 w-2.5 shrink-0 text-ink-300" />
+      </button>
+      <button
+        type="button"
+        onClick={handleClear}
+        className="flex h-6 w-6 items-center justify-center rounded-full bg-white/80 text-ink-500"
+        aria-label="Reset"
+      >
+        <X className="h-3 w-3" />
+      </button>
+    </div>
+  );
+
+  // ============================
+  // Bottom sheet content (mobile only)
+  // ============================
+  const MobileSheetContent = (
     <div className="space-y-2.5">
       {!result && (
         <div className="rounded-xl border border-white/60 bg-white/70 p-2.5 text-[10px] text-ink-700">
-          <span className="font-semibold text-primary-600">Suggested routes:</span>{" "}
-          pick one of the two hardcoded pairs below, or type your own places
-          above.
+          <span className="font-semibold text-primary-600">Tip:</span> tap the
+          search bar above to pick a route or type your own.
         </div>
       )}
-      {editing !== null ? (
-        <input
-          autoFocus
-          value={editing === "origin" ? origin : destination}
-          onChange={(e) =>
-            editing === "origin"
-              ? setOrigin(e.target.value)
-              : setDestination(e.target.value)
-          }
-          onBlur={() => setEditing(null)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === "Escape") {
-              setEditing(null);
-            }
-          }}
-          className="w-full rounded-xl border border-primary-200 bg-white/90 px-3 py-2 text-xs text-ink-900 focus:border-primary-500 focus:outline-none"
-          placeholder="Type a place…"
-        />
-      ) : (
-        <div className="flex items-center gap-1 rounded-xl border border-white/60 bg-white/70 p-1.5">
-          <button
-            type="button"
-            onClick={() => setEditing("origin")}
-            className="flex flex-1 items-center gap-1 truncate rounded px-1 py-0.5 text-[11px] font-semibold"
-          >
-            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary-500" />
-            <span
-              className={
-                "truncate " + (origin ? "text-ink-900" : "text-ink-300 italic")
-              }
-            >
-              {origin || "Type origin"}
-            </span>
-            <Pencil className="h-2.5 w-2.5 shrink-0 text-ink-300" />
-          </button>
-          <button
-            type="button"
-            onClick={handleSwap}
-            className="flex h-6 w-6 items-center justify-center rounded-full bg-white/80 text-ink-500"
-            aria-label="Swap"
-          >
-            <ArrowLeftRight className="h-3 w-3" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setEditing("destination")}
-            className="flex flex-1 items-center gap-1 truncate rounded px-1 py-0.5 text-[11px] font-semibold"
-          >
-            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary-500" />
-            <span
-              className={
-                "truncate " +
-                (destination ? "text-ink-900" : "text-ink-300 italic")
-              }
-            >
-              {destination || "Type destination"}
-            </span>
-            <Pencil className="h-2.5 w-2.5 shrink-0 text-ink-300" />
-          </button>
-          <button
-            type="button"
-            onClick={handleClear}
-            className="flex h-6 w-6 items-center justify-center rounded-full bg-white/80 text-ink-500"
-            aria-label="Reset"
-          >
-            <X className="h-3 w-3" />
-          </button>
-        </div>
-      )}
+      {MobileInputRow}
       <div className="flex items-center gap-2">
         <div className="flex-1">
           <PriorityToggle mode={mode} onChange={setMode} />
         </div>
       </div>
-      <PrimaryButton
-        onClick={handleFind}
-        loading={loading}
-        disabled={!canFind}
-      >
+      <PrimaryButton onClick={handleFind} loading={loading} disabled={!canFind}>
         Find My Route
       </PrimaryButton>
       {error && <ErrorBanner message={error} />}
       {result && (
         <>
-          <button
-            type="button"
-            onClick={() => setDetailsOpen(true)}
-            className="flex w-full items-center justify-between rounded-xl border border-white/60 bg-[linear-gradient(135deg,#df0059_0%,#cc0d5a_100%)] p-2.5 text-left text-white shadow-[0_4px_12px_rgba(223,0,89,0.30)] active:scale-[0.99]"
-          >
-            <div>
-              <div className="text-[9px] font-semibold uppercase tracking-wider opacity-80">
-                Recommended
-              </div>
-              <div className="mt-0.5 text-sm font-bold tabular-nums">
-                {durMin ? fmtDur(durMin) : "—"} · {dist ? `${dist.toFixed(1)} km` : "—"} · RM {toll.toFixed(0)}
-              </div>
-            </div>
-            <ChevronRight className="h-4 w-4 opacity-80" />
-          </button>
+          {RecommendedBento}
           {result.routes.length > 1 && (
             <div className="mt-1 space-y-1">
               <div className="px-1 text-[10px] font-semibold uppercase tracking-wider text-ink-500">
@@ -492,21 +458,114 @@ export default function PlannerPage() {
     </div>
   );
 
+  // ============================
+  // Mobile
+  // ============================
+  if (responsive === "mobile") {
+    return (
+      <PhoneFrame>
+        <StatusBar tone="dark" />
+        <RealMap
+          ref={mapRef}
+          graph={result?.graph ?? { junctions: [], edges: [] }}
+          selectedPath={selectedRoute?.path ?? null}
+          alternativePaths={alternativePaths}
+          originLabel={origin || "Origin"}
+          destinationLabel={destination || "Destination"}
+          maptilerKey={maptilerKey}
+        />
+        {TopSearchBar}
+        {RightControls}
+        <BottomSheet snap={snap} onSnapChange={setSnap}>
+          {MobileSheetContent}
+        </BottomSheet>
+        {result && (
+          <RouteDetailsModal
+            open={detailsOpen}
+            onClose={() => setDetailsOpen(false)}
+            result={result}
+            selectedIdx={selectedIdx}
+            onSelectRoute={(i) => setSelectedIdx(i)}
+          />
+        )}
+      </PhoneFrame>
+    );
+  }
+
+  // ============================
+  // Desktop — same Google-Maps layout, sidebar is a right rail
+  // ============================
   return (
-    <PhoneFrame>
-      <StatusBar tone="dark" />
-      <RealMap
-        graph={result?.graph ?? { junctions: [], edges: [] }}
-        selectedPath={selectedRoute?.path ?? null}
-        alternativePaths={alternativePaths}
-        originLabel={origin}
-        destinationLabel={destination}
-        maptilerKey={maptilerKey}
-      />
-      <FloatingActionButtons />
-      <BottomSheet snap={snap} onSnapChange={setSnap}>
-        {mobileSheet}
-      </BottomSheet>
+    <>
+      <div className="relative flex h-screen w-full overflow-hidden bg-surface-base">
+        <div className="relative flex-1">
+          <RealMap
+            ref={mapRef}
+            graph={result?.graph ?? { junctions: [], edges: [] }}
+            selectedPath={selectedRoute?.path ?? null}
+            alternativePaths={alternativePaths}
+            originLabel={origin || "Origin"}
+            destinationLabel={destination || "Destination"}
+            maptilerKey={maptilerKey}
+          />
+          {TopSearchBar}
+          {RightControls}
+        </div>
+
+        <aside className="relative z-20 flex h-full w-[320px] shrink-0 flex-col border-l border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(255,255,255,0.88)_100%)] backdrop-blur-xl">
+          <header className="flex shrink-0 items-center justify-between border-b border-ink-300/10 px-4 py-2.5">
+            <h1 className="text-sm font-bold text-ink-900">
+              Interstate Expedition Planner
+            </h1>
+            <span className="rounded-full bg-primary-50 px-2 py-0.5 text-[9px] font-semibold text-primary-600">
+              β = {mode === "time" ? "0.5" : "2.5"}
+            </span>
+          </header>
+
+          <div className="flex-1 space-y-3 overflow-y-auto px-3 py-3">
+            {error && <ErrorBanner message={error} />}
+            {RecommendedBento}
+
+            {result && result.routes.length > 1 && (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between px-1 text-[9px] font-semibold uppercase tracking-wider text-ink-500">
+                  <span>All routes</span>
+                  <span className="text-ink-300 normal-case tracking-normal">
+                    {result.routes.length}
+                  </span>
+                </div>
+                {result.routes.map((r, i) => (
+                  <RouteListItem
+                    key={`${r.edgeIds.join("-")}-${i}`}
+                    rank={i + 1}
+                    route={r}
+                    graph={result.graph}
+                    realRoad={result.realRoads?.[i] ?? null}
+                    isSelected={i === selectedIdx}
+                    onSelect={() => setSelectedIdx(i)}
+                  />
+                ))}
+              </div>
+            )}
+
+            {!result && (
+              <div className="rounded-2xl border border-white/60 bg-white/70 p-3 text-[10px] text-ink-700">
+                <div className="font-semibold text-primary-600">Pick a route</div>
+                <p className="mt-1 leading-snug">
+                  Tap a suggestion in the search bar above, or type any
+                  place.
+                </p>
+              </div>
+            )}
+
+            <div className="rounded-2xl border border-white/60 bg-white/70 p-2.5">
+              <PriorityToggle mode={mode} onChange={setMode} />
+            </div>
+
+            <FormulaExplainer mode={mode} />
+          </div>
+        </aside>
+      </div>
       {result && (
         <RouteDetailsModal
           open={detailsOpen}
@@ -516,7 +575,7 @@ export default function PlannerPage() {
           onSelectRoute={(i) => setSelectedIdx(i)}
         />
       )}
-    </PhoneFrame>
+    </>
   );
 }
 

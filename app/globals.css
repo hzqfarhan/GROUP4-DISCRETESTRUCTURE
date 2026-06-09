@@ -95,3 +95,11 @@ body {
   animation: ping-slow 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
 
+.hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+

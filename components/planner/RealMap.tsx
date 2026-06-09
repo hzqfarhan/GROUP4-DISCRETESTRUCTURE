@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -12,6 +12,12 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { WeightedGraph } from "@/lib/graph/types";
 import { fetchOsrmRoute, type OsrmRoute } from "@/lib/routing/osrm";
+
+export interface RealMapHandle {
+  zoomIn: () => void;
+  zoomOut: () => void;
+  recenter: () => void;
+}
 
 interface RealMapProps {
   graph: WeightedGraph;
@@ -64,6 +70,24 @@ function FitBounds({ coords }: { coords: { lat: number; lng: number }[] }) {
     );
     map.fitBounds(bounds, { padding: [60, 60] });
   }, [coords, map]);
+  return null;
+}
+
+interface MapControllerProps {
+  onReady: (api: RealMapHandle) => void;
+}
+function MapController({ onReady }: MapControllerProps) {
+  const map = useMap();
+  useEffect(() => {
+    onReady({
+      zoomIn: () => map.zoomIn(),
+      zoomOut: () => map.zoomOut(),
+      recenter: () => {
+        // Recenter to Peninsular Malaysia overview.
+        map.flyTo([2.6, 102.3], 7, { duration: 0.6 });
+      },
+    });
+  }, [map, onReady]);
   return null;
 }
 
@@ -202,14 +226,30 @@ function SelectedPolyline({
   );
 }
 
-export function RealMap({
-  graph,
-  selectedPath,
-  alternativePaths,
-  originLabel = "Origin",
-  destinationLabel = "Destination",
-  maptilerKey,
-}: RealMapProps) {
+export const RealMap = forwardRef<RealMapHandle, RealMapProps>(function RealMap(
+  {
+    graph,
+    selectedPath,
+    alternativePaths,
+    originLabel = "Origin",
+    destinationLabel = "Destination",
+    maptilerKey,
+  },
+  ref,
+) {
+  const [controllerApi, setControllerApi] = useState<RealMapHandle | null>(
+    null,
+  );
+  useImperativeHandle(
+    ref,
+    (): RealMapHandle => ({
+      zoomIn: () => controllerApi?.zoomIn(),
+      zoomOut: () => controllerApi?.zoomOut(),
+      recenter: () => controllerApi?.recenter(),
+    }),
+    [controllerApi],
+  );
+
   const selectedCoords = useMemo(
     () => pathToCoords(graph, selectedPath),
     [graph, selectedPath],
@@ -298,6 +338,7 @@ export function RealMap({
         })}
 
         <FitBounds coords={allVisibleCoords} />
+        <MapController onReady={setControllerApi} />
       </MapContainer>
 
       <style jsx global>{`
@@ -403,4 +444,5 @@ export function RealMap({
       </div>
     </div>
   );
-}
+});
+RealMap.displayName = "RealMap";
