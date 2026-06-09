@@ -44,10 +44,21 @@ export interface TripStats {
   mode: OptimizationMode;
 }
 
+export interface OsrmManeuver {
+  instruction: string;
+  distanceMeters: number;
+  durationSeconds: number;
+  name: string;
+  type: string;
+  modifier?: string;
+  location: { lat: number; lng: number };
+}
+
 export interface RealRoadGeometry {
   distanceKm: number;
   durationMin: number;
   geometry: { lat: number; lng: number }[];
+  maneuvers?: OsrmManeuver[];
 }
 
 export interface PlanResponse {

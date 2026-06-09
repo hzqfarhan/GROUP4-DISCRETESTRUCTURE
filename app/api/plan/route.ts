@@ -44,6 +44,7 @@ async function routeRealRoad(
     distanceKm: Number((r.distanceMeters / 1000).toFixed(2)),
     durationMin: Math.round(r.durationSeconds / 60),
     geometry: r.geometry,
+    maneuvers: r.maneuvers,
   };
 }
 
