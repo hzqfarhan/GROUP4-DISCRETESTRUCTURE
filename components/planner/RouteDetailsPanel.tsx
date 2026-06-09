@@ -59,7 +59,7 @@ export function RouteDetailsPanel({
   realRoad,
 }: RouteDetailsPanelProps) {
   const beta = stats.beta;
-  const modeLabel = stats.mode === "time" ? "Time-Optimized" : "Budget-Optimized";
+  const modeLabel = stats.mode === "time" ? "Time-Optimized" : "Budget-Optimized · Calculation";
   const dist = realRoad?.distanceKm ?? stats.distanceKm;
   const time = realRoad ? fmtMin(realRoad.durationMin) : stats.formattedTime;
   const maneuvers = (realRoad?.maneuvers ?? []).filter(

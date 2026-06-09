@@ -22,6 +22,7 @@ import { ErrorBanner } from "@/components/ErrorBanner";
 import { RouteDetailsModal } from "@/components/planner/RouteDetailsModal";
 import { SearchBar } from "@/components/planner/SearchBar";
 import { RouteDetailsPanel } from "@/components/planner/RouteDetailsPanel";
+import { CalculationPanel } from "@/components/planner/CalculationPanel";
 import { SplashScreen } from "@/components/SplashScreen";
 import type { OptimizationMode, PlanResponse } from "@/lib/graph/types";
 import { HARDCODED_PAIRS } from "@/lib/graph/store";
@@ -269,6 +270,13 @@ export default function PlannerPage() {
         {mobileCard === "expanded" && (
           <>
             {MiniBento}
+            {result && mode === "budget" && (
+              <CalculationPanel
+                route={result.routes[selectedIdx] ?? result.recommended}
+                graph={result.graph}
+                mode={mode}
+              />
+            )}
             {result && result.routes.length > 1 && (
               <div className="mt-2 space-y-1.5">
                 <div className="flex items-center justify-between px-1 text-[9px] font-semibold uppercase tracking-wider text-ink-500">
@@ -424,6 +432,14 @@ export default function PlannerPage() {
           <div className="flex-1 space-y-3 overflow-y-auto px-3 py-3">
             {error && <ErrorBanner message={error} />}
             {MiniBento}
+
+            {result && mode === "budget" && (
+              <CalculationPanel
+                route={result.routes[selectedIdx] ?? result.recommended}
+                graph={result.graph}
+                mode={mode}
+              />
+            )}
 
             {result && result.routes.length > 1 && (
               <div className="space-y-1.5">

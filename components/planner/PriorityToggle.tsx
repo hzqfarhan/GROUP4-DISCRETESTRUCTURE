@@ -1,5 +1,5 @@
 "use client";
-import { Clock, Wallet } from "lucide-react";
+import { Clock, Calculator } from "lucide-react";
 import type { OptimizationMode } from "@/lib/graph/types";
 
 interface PriorityToggleProps {
@@ -20,8 +20,8 @@ export function PriorityToggle({ mode, onChange }: PriorityToggleProps) {
           },
           {
             key: "budget" as const,
-            label: "Budget",
-            icon: Wallet,
+            label: "Calculation",
+            icon: Calculator,
             accent: "text-primary-700",
           },
         ]
