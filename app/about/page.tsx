@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { ArrowLeft, GitBranch, Calculator, Sparkles } from "lucide-react";
-import { StatusBar } from "@/components/ui/StatusBar";
 import { PhoneFrame } from "@/components/ui/PhoneFrame";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { MapCanvas } from "@/components/planner/MapCanvas";
@@ -9,7 +8,6 @@ import { UTHM_SENDAYAN_GRAPH } from "@/lib/graph/uthm-sendayan";
 export default function AboutPage() {
   return (
     <PhoneFrame>
-      <StatusBar tone="dark" />
       <div
         className="relative flex flex-1 flex-col"
         style={{ background: "var(--grad-splash)" }}

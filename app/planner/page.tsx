@@ -14,7 +14,6 @@ import {
   ChevronLeft,
   Loader2,
 } from "lucide-react";
-import { StatusBar } from "@/components/ui/StatusBar";
 import { PhoneFrame } from "@/components/ui/PhoneFrame";
 import { PriorityToggle } from "@/components/planner/PriorityToggle";
 import { PrimaryButton } from "@/components/ui/PrimaryButton";
@@ -314,7 +313,6 @@ export default function PlannerPage() {
       <>
         <SplashScreen />
         <PhoneFrame>
-        <StatusBar tone="dark" />
         <RealMap
           ref={mapRef}
           graph={result?.graph ?? { junctions: [], edges: [] }}
