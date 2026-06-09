@@ -18,7 +18,7 @@ interface SearchBarProps {
   onChangeDestination: (v: string) => void;
   onSwap: () => void;
   onClear: () => void;
-  onPickPair: (id: string) => void;
+  onPickPair: (id: "sendayan" | "melaka") => void;
   onFind: () => void;
   canFind: boolean;
   loading: boolean;
@@ -26,8 +26,8 @@ interface SearchBarProps {
 }
 
 const HARD_PAIRS = [
-  { id: "sendayan", o: "UTHM Parit Raja", d: "Masjid Sri Sendayan" },
-  { id: "melaka", o: "UTHM Parit Raja", d: "Masjid Selat Melaka (Pulau Melaka)" },
+  { id: "sendayan" as const, o: "UTHM Parit Raja", d: "Masjid Sri Sendayan" },
+  { id: "melaka" as const, o: "UTHM Parit Raja", d: "Masjid Selat Melaka (Pulau Melaka)" },
 ];
 
 export function SearchBar({
@@ -161,7 +161,7 @@ export function SearchBar({
           >
             {origin || destination
               ? `${origin || "Origin"} → ${destination || "Destination"}`
-              : "Search UTHM → Masjid Sri Sendayan"}
+              : "Search any place in Malaysia…"}
           </button>
           {(origin || destination) && (
             <button

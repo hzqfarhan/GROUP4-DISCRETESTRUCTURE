@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import {
   Plus,
   Minus,
@@ -22,6 +23,7 @@ import { ErrorBanner } from "@/components/ErrorBanner";
 import { RouteDetailsModal } from "@/components/planner/RouteDetailsModal";
 import { SearchBar } from "@/components/planner/SearchBar";
 import { RouteDetailsPanel } from "@/components/planner/RouteDetailsPanel";
+import { SplashScreen } from "@/components/SplashScreen";
 import type { OptimizationMode, PlanResponse } from "@/lib/graph/types";
 import { HARDCODED_PAIRS } from "@/lib/graph/store";
 
@@ -57,6 +59,9 @@ export default function PlannerPage() {
 
   const [origin, setOrigin] = useState<string>("");
   const [destination, setDestination] = useState<string>("");
+  const [activePairId, setActivePairId] = useState<"sendayan" | "melaka" | null>(
+    null,
+  );
   const [mode, setMode] = useState<OptimizationMode>("time");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -95,7 +100,7 @@ export default function PlannerPage() {
       const res = await fetch("/api/plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ origin, destination, mode }),
+        body: JSON.stringify({ origin, destination, mode, pairId: activePairId }),
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
@@ -115,6 +120,7 @@ export default function PlannerPage() {
   function handleClear() {
     setOrigin("");
     setDestination("");
+    setActivePairId(null);
     setResult(null);
     setError(null);
     setSelectedIdx(0);
@@ -127,11 +133,12 @@ export default function PlannerPage() {
     setDestination(origin);
   }
 
-  function pickPair(pairId: string) {
+  function pickPair(pairId: "sendayan" | "melaka") {
     const p = PAIR_BY_ID[pairId];
     if (!p) return;
     setOrigin(p.origin);
     setDestination(p.destination);
+    setActivePairId(pairId);
     setError(null);
   }
 
@@ -304,7 +311,9 @@ export default function PlannerPage() {
   // ============================
   if (responsive === "mobile") {
     return (
-      <PhoneFrame>
+      <>
+        <SplashScreen />
+        <PhoneFrame>
         <StatusBar tone="dark" />
         <RealMap
           ref={mapRef}
@@ -315,19 +324,25 @@ export default function PlannerPage() {
           destinationLabel={destination || "Destination"}
           maptilerKey={maptilerKey}
         />
-        <SearchBar
-          origin={origin}
-          destination={destination}
-          onChangeOrigin={setOrigin}
-          onChangeDestination={setDestination}
-          onSwap={handleSwap}
-          onClear={handleClear}
-          onPickPair={pickPair}
-          onFind={handleFind}
-          canFind={canFind}
-          loading={loading}
-          hasResult={!!result}
-        />
+            <SearchBar
+              origin={origin}
+              destination={destination}
+              onChangeOrigin={(v) => {
+                setOrigin(v);
+                setActivePairId(null);
+              }}
+              onChangeDestination={(v) => {
+                setDestination(v);
+                setActivePairId(null);
+              }}
+              onSwap={handleSwap}
+              onClear={handleClear}
+              onPickPair={pickPair}
+              onFind={handleFind}
+              canFind={canFind}
+              loading={loading}
+              hasResult={!!result}
+            />
         {RightControls}
         {MobileFloatingCard}
         {result && (
@@ -348,6 +363,7 @@ export default function PlannerPage() {
           />
         )}
       </PhoneFrame>
+      </>
     );
   }
 
@@ -379,17 +395,30 @@ export default function PlannerPage() {
 
       {desktopRail === "collapsed" ? (
         <div className="flex h-full flex-col items-center gap-3 py-3">
-          <span className="rotate-180 text-[10px] font-bold tracking-wider text-ink-700 [writing-mode:vertical-rl]">
-            IEP
-          </span>
+          <Image
+            src="/asset/jjlogo.PNG"
+            alt="JJ"
+            width={28}
+            height={28}
+            className="h-7 w-7 rounded-md object-cover"
+          />
         </div>
       ) : (
         <>
-          <header className="flex shrink-0 items-center justify-between border-b border-ink-300/10 px-3 py-2.5">
-            <h1 className="truncate text-sm font-bold text-ink-900">
-              Interstate Expedition Planner
-            </h1>
-            <span className="rounded-full bg-primary-50 px-2 py-0.5 text-[9px] font-semibold text-primary-600">
+          <header className="flex shrink-0 items-center justify-between gap-2 border-b border-ink-300/10 px-3 py-2.5">
+            <div className="flex min-w-0 items-center gap-2">
+              <Image
+                src="/asset/jjlogo.PNG"
+                alt="JimatJourney"
+                width={24}
+                height={24}
+                className="h-6 w-6 shrink-0 rounded-md object-cover"
+              />
+              <h1 className="truncate text-sm font-bold text-ink-900">
+                JimatJourney
+              </h1>
+            </div>
+            <span className="shrink-0 rounded-full bg-primary-50 px-2 py-0.5 text-[9px] font-semibold text-primary-600">
               β = {mode === "time" ? "0.5" : "2.5"}
             </span>
           </header>
@@ -443,6 +472,7 @@ export default function PlannerPage() {
 
   return (
     <>
+      <SplashScreen />
       <div className="relative flex h-screen w-full overflow-hidden bg-surface-base">
         <div className="relative flex-1">
           <RealMap

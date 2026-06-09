@@ -1,8 +1,8 @@
-// IEP service worker — real PWA: precaches the app shell, network-first for
+// JimatJourney service worker — real PWA: precaches the app shell, network-first for
 // navigations, cache-first for static assets, offline fallback for the
-// hardcoded IEP route.
+// hardcoded route data.
 
-const VERSION = "iep-v2";
+const VERSION = "jj-v3";
 const SHELL_CACHE = `${VERSION}-shell`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 
@@ -10,9 +10,12 @@ const APP_SHELL = [
   "/",
   "/planner",
   "/about",
-  "/manifest.json",
+  "/manifest.webmanifest",
   "/icon-192.png",
   "/icon-512.png",
+  "/apple-touch-icon.png",
+  "/favicon-32.png",
+  "/asset/jjlogo.PNG",
 ];
 
 self.addEventListener("install", (event) => {

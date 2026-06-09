@@ -1,13 +1,17 @@
-# IEP — Interstate Expedition Planner
+# JJ — JimatJourney
 
 A PWA that finds the **optimal travel route** between **UTHM Parit Raja** and
-**Masjid Sri Sendayan**, with two priority modes (**Time-Optimized** /
-**Budget-Optimized**) powered by a hand-implemented **Dijkstra's algorithm**
-on an undirected weighted graph. For any other origin/destination pair, the
-app falls back to **Ollama Cloud** to generate a route graph, then runs the
-same Dijkstra locally.
+**Masjid Sri Sendayan** (or any other place in Malaysia), with two priority
+modes (**Time-Optimized** / **Budget-Optimized**) powered by a hand-implemented
+**Dijkstra's algorithm** on an undirected weighted graph. For free-text
+origin/destination pairs, the app uses **Photon** for geocoding and **Ollama
+Cloud** to generate a route graph, then runs the same Dijkstra locally with
+real road geometry from **OSRM**.
 
 Built for the **BIK10602 Discrete Structure** group project.
+
+> **JimatJourney (JJ)** — *Jimat* means "save" in Malay; *Journey* is the trip.
+> Save your journey, not your money.
 
 ## Stack
 

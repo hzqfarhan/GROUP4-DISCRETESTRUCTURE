@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { findAllRoutes } from "@/lib/graph/dijkstra";
 import { computeTripStats } from "@/lib/graph/stats";
-import { resolveHardcodedPair } from "@/lib/graph/store";
+import { HARDCODED_PAIRS, resolveHardcodedPair } from "@/lib/graph/store";
 import { resolveJunctionId, roadTypesForRoute } from "@/lib/graph/resolver";
 import { fetchDynamicGraph } from "@/lib/ai/ollama";
 import { fetchOsrmRoute } from "@/lib/routing/osrm";
@@ -20,6 +20,10 @@ const BodySchema = z.object({
   origin: z.string().min(1),
   destination: z.string().min(1),
   mode: z.enum(["time", "budget"]),
+  // Optional explicit hardcoded-pair id (e.g. "sendayan" or "melaka") so
+  // the user can click a suggestion and the path always resolves even
+  // after they edit the displayed name.
+  pairId: z.enum(["sendayan", "melaka"]).optional(),
 });
 
 function pathCoordsForRoute(
@@ -63,14 +67,20 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
-  const { origin, destination, mode } = parsed.data;
+  const { origin, destination, mode, pairId } = parsed.data;
 
   let graph: WeightedGraph;
   let source: "hardcoded" | "ai";
   let hardcodedOriginId: string | undefined;
   let hardcodedDestId: string | undefined;
 
-  const hardcoded = resolveHardcodedPair(origin, destination);
+  // Prefer the explicit pairId if the client provides one (e.g. the user
+  // clicked a hardcoded suggestion). Fall back to name-based matching,
+  // then to the AI generator.
+  let hardcoded = pairId
+    ? HARDCODED_PAIRS.find((p) => p.id === pairId) ?? null
+    : null;
+  hardcoded ??= resolveHardcodedPair(origin, destination);
   if (hardcoded) {
     graph = hardcoded.graph;
     source = "hardcoded";

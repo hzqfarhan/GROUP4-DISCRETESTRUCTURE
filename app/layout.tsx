@@ -4,14 +4,21 @@ import { ServiceWorkerRegistrar } from "@/components/ServiceWorkerRegistrar";
 import { InstallPrompt } from "@/components/InstallPrompt";
 
 export const metadata: Metadata = {
-  title: "Interstate Expedition Planner",
+  title: "JimatJourney (JJ)",
   description:
-    "IEP — find the optimal route between UTHM Parit Raja and Masjid Sri Sendayan with time- or budget-optimized Dijkstra routing.",
-  applicationName: "IEP",
+    "JJ (JimatJourney) — find the optimal route between UTHM Parit Raja and Masjid Sri Sendayan (or any other place) with time- or budget-optimized Dijkstra routing on real Malaysian roads.",
+  applicationName: "JimatJourney",
+  icons: {
+    icon: [
+      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/asset/jjlogo.PNG", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "IEP",
+    title: "JimatJourney",
   },
   formatDetection: {
     telephone: false,

@@ -2,10 +2,10 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Interstate Expedition Planner",
-    short_name: "IEP",
+    name: "JimatJourney",
+    short_name: "JJ",
     description:
-      "Find the optimal route between UTHM Parit Raja and Masjid Sri Sendayan.",
+      "Find the optimal route between UTHM Parit Raja and Masjid Sri Sendayan (or any other place) using graph theory + Dijkstra.",
     start_url: "/planner",
     scope: "/",
     display: "standalone",
@@ -23,6 +23,12 @@ export default function manifest(): MetadataRoute.Manifest {
       {
         src: "/icon-512.png",
         sizes: "512x512",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/asset/jjlogo.PNG",
+        sizes: "1080x1080",
         type: "image/png",
         purpose: "any",
       },
