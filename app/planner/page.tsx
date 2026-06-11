@@ -74,7 +74,7 @@ export default function PlannerPage() {
 
   const [origin, setOrigin] = useState<string>("");
   const [destination, setDestination] = useState<string>("");
-  const [activePairId, setActivePairId] = useState<"sendayan" | "melaka" | null>(
+  const [activePairId, setActivePairId] = useState<"sendayan" | "melaka" | "klia" | null>(
     null,
   );
   const [mode, setMode] = useState<OptimizationMode>("time");
@@ -190,7 +190,7 @@ export default function PlannerPage() {
     setDestination(origin);
   }
 
-  function pickPair(pairId: "sendayan" | "melaka") {
+  function pickPair(pairId: "sendayan" | "melaka" | "klia") {
     const p = PAIR_BY_ID[pairId];
     if (!p) return;
     setOrigin(p.origin);
@@ -626,6 +626,16 @@ export default function PlannerPage() {
                     ? `${origin || "Origin"} → ${destination || "Destination"}`
                     : "Pick an origin & destination"}
                 </div>
+                <button
+                  type="button"
+                  onClick={() => pickPair("klia")}
+                  className="flex items-center gap-2 rounded-xl bg-primary-50/50 px-3 py-2 text-left text-primary-700 transition-colors hover:bg-primary-50 active:bg-primary-100"
+                >
+                  <MapPin className="h-4 w-4 shrink-0 opacity-70" />
+                  <span className="text-[13px] font-medium">
+                    KLIA
+                  </span>
+                </button>
               </div>
               {result ? (
                 <button

@@ -19,7 +19,7 @@ interface SearchBarProps {
   onChangeDestination: (v: string) => void;
   onSwap: () => void;
   onClear: () => void;
-  onPickPair: (id: "sendayan" | "melaka") => void;
+  onPickPair: (id: "sendayan" | "melaka" | "klia") => void;
   onFind: () => void;
   canFind: boolean;
   loading: boolean;
@@ -29,6 +29,7 @@ interface SearchBarProps {
 const SUGGESTED_PAIRS = [
   { id: "sendayan" as const, o: "UTHM Parit Raja", d: "Masjid Sri Sendayan" },
   { id: "melaka" as const, o: "UTHM Parit Raja", d: "Masjid Selat Melaka" },
+  { id: "klia" as const, o: "UTHM Parit Raja", d: "KLIA Terminal" },
 ];
 
 export function SearchBar({
