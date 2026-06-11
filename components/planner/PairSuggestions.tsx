@@ -23,7 +23,7 @@ const PAIR_META: Record<
   melaka: {
     label: "Masjid Selat Melaka",
     origin: "UTHM Parit Raja",
-    destination: "Masjid Selat Melaka (Pulau Melaka)",
+    destination: "Masjid Selat Melaka",
     tag: "PLUS / AMJ / FR5 / inland · 6 routes",
     tone: "melaka",
   },

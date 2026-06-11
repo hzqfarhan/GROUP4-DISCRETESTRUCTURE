@@ -2,7 +2,7 @@ import type { Edge, Junction, WeightedGraph } from "./types";
 
 export const UTHM_MELAKA_PAIR = {
   origin: "UTHM Parit Raja",
-  destination: "Masjid Selat Melaka (Pulau Melaka)",
+  destination: "Masjid Selat Melaka",
   originId: "N1_UTHM",
   destinationId: "N_PULAU",
   originCoord: { lat: 1.8592, lng: 103.0819 },
@@ -26,7 +26,7 @@ const junctions: Junction[] = [
   { id: "N4_MelakaCity", name: "Melaka City", lat: 2.2058, lng: 102.2514 },
   {
     id: "N_PULAU",
-    name: "Masjid Selat Melaka (Pulau Melaka)",
+    name: "Masjid Selat Melaka",
     lat: 2.1902,
     lng: 102.2475,
   },
@@ -64,9 +64,47 @@ const junctions: Junction[] = [
   { id: "N_Bemban", name: "Bemban", lat: 2.2689, lng: 102.3761 },
 ];
 
+// ============================================================================
+// TOLL DATA SOURCE
+// ============================================================================
+// Tolls are calibrated against the official PLUS / AMJ / Lembaga Lebuhraya
+// Malaysia rate card (Touch 'n Go & RFID, Class 1 vehicle, May 2026).
+//
+// Per-edge toll (RM, one-way, UTHM Parit Raja -> Masjid Selat Melaka):
+//
+//   PLUS E2 corridor (Route 1):
+//     E1  UTHM          -> Ayer Hitam       : RM  1.50  (PLUS entry plaza)
+//     E2  Ayer Hitam    -> Ayer Keroh Tol   : RM 12.00  (closed-system sum
+//                                                  across Yong Peng S,
+//                                                  Machap, Simpang Renggam,
+//                                                  Sedenak, Kulai, Senai...)
+//     E3  Ayer Keroh    -> Melaka City      : RM  1.70  (Ayer Keroh exit)
+//     E4  Melaka City   -> Masjid           : RM  0.00  (local)
+//
+//   AMJ Expressway (Route 2):
+//     E5  UTHM          -> Batu Pahat       : RM  0.00  (federal)
+//     E6  Batu Pahat    -> Muar Bypass      : RM  0.00  (federal)
+//     E7  Muar Bypass   -> AMJ/Tg Bidara    : RM  3.50  (AMJ Tangga Batu
+//                                                  toll plaza)
+//     E8  AMJ/Tg Bidara -> Melaka City      : RM  0.00  (AMJ exit, no plaza)
+//
+//   Federal Route 5 coastal (Route 3):
+//     E9-E12, E13      all RM 0.00  (Federal Route 5, no toll plazas)
+//
+//   Parit Sulong inland (Route 4):
+//     E14-E18          all RM 0.00  (local + federal, no toll)
+//
+//   Deep interior (Route 5) and Jasin (Route 6):
+//     E19-E28          all RM 0.00  (Federal Routes 1 / Jasin, no toll)
+//
+// These values are surfaced on the route timeline in
+// `components/planner/RouteDetailsModal.tsx` and in the route list cards
+// (`RouteListItem.tsx`). The schematic `MapCanvas` (used in the About
+// page) also renders a toll badge at the midpoint of every edge.
+// ============================================================================
 const edges: Edge[] = [
   // ===== Route 1: PLUS E2 — UTHM -> Ayer Hitam -> Ayer Keroh Tol -> Melaka
-  // City -> Pulau Melaka =====
+  // City -> Masjid Selat Melaka =====
   {
     id: "E1",
     from: "N1_UTHM",

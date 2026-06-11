@@ -22,8 +22,12 @@ const BodySchema = z.object({
   mode: z.enum(["time", "budget"]),
   // Optional explicit hardcoded-pair id (e.g. "sendayan" or "melaka") so
   // the user can click a suggestion and the path always resolves even
-  // after they edit the displayed name.
-  pairId: z.enum(["sendayan", "melaka"]).optional(),
+  // after they edit the displayed name. Accept null too (some clients
+  // send null when no pair is active).
+  pairId: z
+    .union([z.enum(["sendayan", "melaka"]), z.null()])
+    .optional()
+    .transform((v) => (v ? v : undefined)),
 });
 
 function pathCoordsForRoute(
@@ -62,8 +66,11 @@ export async function POST(request: Request) {
 
   const parsed = BodySchema.safeParse(body);
   if (!parsed.success) {
+    const issues = parsed.error.issues
+      .map((i) => `${i.path.join(".") || "<root>"}: ${i.message}`)
+      .join("; ");
     return NextResponse.json(
-      { error: "Invalid input", details: parsed.error.flatten() },
+      { error: `Invalid input — ${issues}` },
       { status: 400 },
     );
   }

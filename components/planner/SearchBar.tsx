@@ -7,9 +7,10 @@ import {
   MapPin,
   Loader2,
   Sparkles,
+  LocateFixed,
 } from "lucide-react";
 import type { PhotonPlace } from "@/lib/routing/geocode";
-import { formatPlaceLabel } from "@/lib/routing/geocode";
+import { formatPlaceLabel, reverseGeocode } from "@/lib/routing/geocode";
 
 interface SearchBarProps {
   origin: string;
@@ -27,7 +28,7 @@ interface SearchBarProps {
 
 const HARD_PAIRS = [
   { id: "sendayan" as const, o: "UTHM Parit Raja", d: "Masjid Sri Sendayan" },
-  { id: "melaka" as const, o: "UTHM Parit Raja", d: "Masjid Selat Melaka (Pulau Melaka)" },
+  { id: "melaka" as const, o: "UTHM Parit Raja", d: "Masjid Selat Melaka" },
 ];
 
 export function SearchBar({
@@ -53,6 +54,8 @@ export function SearchBar({
   const [destResults, setDestResults] = useState<PhotonPlace[]>([]);
   const [originLoading, setOriginLoading] = useState(false);
   const [destLoading, setDestLoading] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [locateError, setLocateError] = useState<string | null>(null);
   const originAbortRef = useRef<AbortController | null>(null);
   const destAbortRef = useRef<AbortController | null>(null);
 
@@ -135,6 +138,35 @@ export function SearchBar({
   function pickDest(p: PhotonPlace) {
     onChangeDestination(formatPlaceLabel(p));
     setEditing(null);
+  }
+
+  function useMyLocation() {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setLocateError("Geolocation is not supported in this browser.");
+      return;
+    }
+    setLocating(true);
+    setLocateError(null);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        const place = await reverseGeocode(latitude, longitude);
+        if (place) {
+          onChangeOrigin(formatPlaceLabel(place));
+        } else {
+          onChangeOrigin(
+            `My location (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`,
+          );
+        }
+        setLocating(false);
+        setEditing("destination");
+      },
+      (err) => {
+        setLocateError(err.message || "Could not get your location.");
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10_000, maximumAge: 60_000 },
+    );
   }
 
   const showSuggestions =
@@ -233,6 +265,20 @@ export function SearchBar({
               )}
               <button
                 type="button"
+                onClick={useMyLocation}
+                disabled={locating}
+                title="Use my current location"
+                aria-label="Use my current location"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-primary-500 shadow-sm hover:bg-primary-50 disabled:opacity-60"
+              >
+                {locating ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <LocateFixed className="h-3.5 w-3.5" />
+                )}
+              </button>
+              <button
+                type="button"
                 onClick={onSwap}
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-ink-500 shadow-sm hover:text-primary-500"
                 aria-label="Swap"
@@ -275,6 +321,11 @@ export function SearchBar({
             {/* Autocomplete suggestions */}
             {showSuggestions && (
               <div className="mt-2 max-h-56 overflow-y-auto rounded-2xl border border-ink-300/10 bg-white">
+                {locateError && (
+                  <div className="px-3 py-2 text-[11px] text-primary-600">
+                    {locateError}
+                  </div>
+                )}
                 {(editing === "origin" ? originResults : destResults).map((p) => (
                   <button
                     key={`${p.osmType}-${p.osmId}-${p.lat}-${p.lng}`}

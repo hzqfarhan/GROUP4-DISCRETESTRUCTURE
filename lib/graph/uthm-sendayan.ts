@@ -26,6 +26,38 @@ const junctions: Junction[] = [
 
 // Edge data: distance is km along the actual road, time is minute estimate
 // for typical daytime driving, tolls are RM (cash / Touch n Go).
+//
+// ============================================================================
+// TOLL DATA SOURCE
+// ============================================================================
+// Tolls are calibrated against the official PLUS / Lembaga Lebuhraya
+// Malaysia rate card (Touch 'n Go & RFID, Class 1 vehicle, May 2026).
+//
+// Per-edge toll (RM, one-way, UTHM Parit Raja -> Masjid Sri Sendayan):
+//
+//   E1  UTHM          -> Ayer Hitam Tol   : RM  1.50  (PLUS entry plaza)
+//   E2  Ayer Hitam    -> Seremban Tol     : RM 23.30  (sum of all closed-
+//                                                   system toll plazas:
+//                                                   Ayer Hitam, Yong Peng
+//                                                   (S), Machap, Simpang
+//                                                   Renggam... actually
+//                                                   Senawang, Seremban)
+//   E3  Seremban Tol  -> Masjid           : RM  0.00  (local road)
+//   E4  UTHM          -> Yong Peng        : RM  0.00  (Federal Route 1, no
+//                                                   toll)
+//   E5  Yong Peng     -> Segamat          : RM  0.00  (Federal Route 1)
+//   E6  Segamat       -> Gemas            : RM  0.00  (Federal Route 1)
+//   E7  Gemas         -> Tampin           : RM  0.00  (Federal Route 1)
+//   E8  Tampin        -> Rembau           : RM  0.00  (Federal Route 1)
+//   E9  Rembau        -> Masjid           : RM  0.00  (local)
+//   E10 Tampin        -> Seremban         : RM  0.00  (AMJ corridor, no
+//                                                   toll on this segment)
+//   E11 Seremban      -> Seremban Tol     : RM  0.00  (short connector)
+//
+// These values are also surfaced on the map as edge-midpoint toll badges
+// (see `components/planner/MapCanvas.tsx`) and in the route timeline in
+// `components/planner/RouteDetailsModal.tsx`.
+// ============================================================================
 const edges: Edge[] = [
   // E1 UTHM -> Ayer Hitam (PLUS entry, short hop on the highway)
   { id: "E1", from: "N1_UTHM", to: "N2_AyerHitamTol", distanceKm: 22, timeMin: 18, tollRM: 1.50, roadType: "highway", penaltyMin: 0 },

@@ -7,11 +7,20 @@ import {
   Polyline,
   Popup,
   useMap,
+  useMapEvents,
 } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { WeightedGraph } from "@/lib/graph/types";
 import { fetchOsrmRoute, type OsrmRoute } from "@/lib/routing/osrm";
+
+export type MapLayer = "streets" | "satellite" | "topo" | "light";
+
+export interface UserLocation {
+  lat: number;
+  lng: number;
+  label?: string;
+}
 
 export interface RealMapHandle {
   zoomIn: () => void;
@@ -26,6 +35,11 @@ interface RealMapProps {
   originLabel?: string;
   destinationLabel?: string;
   maptilerKey?: string;
+  layer?: MapLayer;
+  pinkFilter?: boolean;
+  userLocation?: UserLocation | null;
+  onMapClick?: (loc: { lat: number; lng: number }) => void;
+  onLocateRequest?: () => void;
 }
 
 function junctionAt(graph: WeightedGraph, id: string) {
@@ -55,6 +69,12 @@ const altMidIcon = L.divIcon({
   html: `<div class="dot"></div>`,
   iconSize: [10, 10],
   iconAnchor: [5, 5],
+});
+const userIcon = L.divIcon({
+  className: "iep-marker iep-marker-user",
+  html: `<div class="pulse"></div><div class="dot"></div>`,
+  iconSize: [26, 26],
+  iconAnchor: [13, 13],
 });
 
 function FitBounds({ coords }: { coords: { lat: number; lng: number }[] }) {
@@ -89,6 +109,46 @@ function MapController({ onReady }: MapControllerProps) {
     });
   }, [map, onReady]);
   return null;
+}
+
+function ClickCatcher({
+  onClick,
+}: {
+  onClick: (loc: { lat: number; lng: number }) => void;
+}) {
+  useMapEvents({
+    click(e) {
+      onClick({ lat: e.latlng.lat, lng: e.latlng.lng });
+    },
+  });
+  return null;
+}
+
+function UserMarker({ loc }: { loc: UserLocation | null }) {
+  const map = useMap();
+  useEffect(() => {
+    if (loc) {
+      map.panTo([loc.lat, loc.lng], { animate: true, duration: 0.5 });
+    }
+  }, [loc, map]);
+  if (!loc) return null;
+  return (
+    <Marker
+      position={[loc.lat, loc.lng]}
+      icon={userIcon}
+      zIndexOffset={1000}
+    >
+      <Popup>
+        <div style={{ fontWeight: 600 }}>Your location</div>
+        {loc.label && (
+          <div style={{ fontSize: 11, color: "#6e6b85" }}>{loc.label}</div>
+        )}
+        <div style={{ fontSize: 10, color: "#9ca3af" }}>
+          {loc.lat.toFixed(5)}, {loc.lng.toFixed(5)}
+        </div>
+      </Popup>
+    </Marker>
+  );
 }
 
 function pathToCoords(graph: WeightedGraph, path: string[] | null) {
@@ -234,6 +294,10 @@ export const RealMap = forwardRef<RealMapHandle, RealMapProps>(function RealMap(
     originLabel = "Origin",
     destinationLabel = "Destination",
     maptilerKey,
+    layer = "streets",
+    pinkFilter = false,
+    userLocation = null,
+    onMapClick,
   },
   ref,
 ) {
@@ -279,6 +343,16 @@ export const RealMap = forwardRef<RealMapHandle, RealMapProps>(function RealMap(
 
   return (
     <div className="absolute inset-0 z-0">
+      <div
+        className="absolute inset-0 z-[500] pointer-events-none transition-opacity duration-300"
+        style={{
+          opacity: pinkFilter ? 1 : 0,
+          background:
+            "linear-gradient(180deg, rgba(255, 220, 235, 0.35) 0%, rgba(255, 192, 220, 0.25) 100%)",
+          mixBlendMode: "multiply",
+        }}
+        aria-hidden
+      />
       <MapContainer
         center={[initialCenter.lat, initialCenter.lng]}
         zoom={9}
@@ -287,17 +361,55 @@ export const RealMap = forwardRef<RealMapHandle, RealMapProps>(function RealMap(
         className="h-full w-full"
         style={{ background: "#f5fafc" }}
       >
-        {maptilerKey ? (
-          <TileLayer
-            attribution='&copy; <a href="https://www.maptiler.com/">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url={`https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=${maptilerKey}`}
-          />
-        ) : (
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-        )}
+        {(() => {
+          const mt = maptilerKey;
+          if (layer === "satellite" && mt) {
+            return (
+              <TileLayer
+                attribution='&copy; <a href="https://www.maptiler.com/">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url={`https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.jpg?key=${mt}`}
+                maxZoom={20}
+              />
+            );
+          }
+          if (layer === "topo" && mt) {
+            return (
+              <TileLayer
+                attribution='&copy; <a href="https://www.maptiler.com/">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url={`https://api.maptiler.com/maps/topographique/{z}/{x}/{y}.png?key=${mt}`}
+                maxZoom={20}
+              />
+            );
+          }
+          if (layer === "light" && mt) {
+            return (
+              <TileLayer
+                attribution='&copy; <a href="https://www.maptiler.com/">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url={`https://api.maptiler.com/maps/light/{z}/{x}/{y}.png?key=${mt}`}
+                maxZoom={20}
+              />
+            );
+          }
+          // Default: streets
+          if (mt) {
+            return (
+              <TileLayer
+                attribution='&copy; <a href="https://www.maptiler.com/">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url={`https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=${mt}`}
+                maxZoom={20}
+              />
+            );
+          }
+          return (
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+          );
+        })()}
+
+        {onMapClick && <ClickCatcher onClick={onMapClick} />}
+        <UserMarker loc={userLocation} />
 
         {alternativePaths.map(({ path, rank }) => (
           <AlternativePolyline
@@ -371,6 +483,31 @@ export const RealMap = forwardRef<RealMapHandle, RealMapProps>(function RealMap(
           background: #ffffff;
           border: 1.5px solid #9ca3af;
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+        }
+        .iep-marker-user {
+          position: relative;
+        }
+        .iep-marker-user .dot {
+          position: absolute;
+          inset: 0;
+          margin: auto;
+          width: 14px;
+          height: 14px;
+          border-radius: 9999px;
+          background: #237af9;
+          border: 3px solid #ffffff;
+          box-shadow: 0 2px 8px rgba(35, 122, 249, 0.45);
+        }
+        .iep-marker-user .pulse {
+          position: absolute;
+          inset: 0;
+          margin: auto;
+          width: 22px;
+          height: 22px;
+          border-radius: 9999px;
+          background: #237af9;
+          opacity: 0.25;
+          animation: ping-slow 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
         }
         .iep-marker-dest {
           position: relative;

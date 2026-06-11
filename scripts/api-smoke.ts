@@ -64,7 +64,7 @@ async function main() {
   try {
     for (const pair of [
       { o: "UTHM Parit Raja", d: "Masjid Sri Sendayan" },
-      { o: "UTHM Parit Raja", d: "Masjid Selat Melaka (Pulau Melaka)" },
+      { o: "UTHM Parit Raja", d: "Masjid Selat Melaka" },
     ]) {
       for (const mode of ["time", "budget"] as const) {
         const data = await hitApi(pair.o, pair.d, mode);

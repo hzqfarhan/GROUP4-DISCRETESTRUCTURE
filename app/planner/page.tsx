@@ -13,6 +13,11 @@ import {
   ChevronRight,
   ChevronLeft,
   Loader2,
+  Palette,
+  Map as MapIcon,
+  Satellite,
+  Mountain,
+  Sun,
 } from "lucide-react";
 import { PhoneFrame } from "@/components/ui/PhoneFrame";
 import { PriorityToggle } from "@/components/planner/PriorityToggle";
@@ -26,6 +31,7 @@ import { CalculationPanel } from "@/components/planner/CalculationPanel";
 import { SplashScreen } from "@/components/SplashScreen";
 import type { OptimizationMode, PlanResponse } from "@/lib/graph/types";
 import { HARDCODED_PAIRS } from "@/lib/graph/store";
+import type { MapLayer, UserLocation, RealMapHandle } from "@/components/planner/RealMap";
 
 const RealMap = dynamic(
   () => import("@/components/planner/RealMap").then((m) => m.RealMap),
@@ -36,6 +42,13 @@ type Mode = "mobile" | "desktop";
 
 const PAIR_BY_ID: Record<string, (typeof HARDCODED_PAIRS)[number]> =
   Object.fromEntries(HARDCODED_PAIRS.map((p) => [p.id, p]));
+
+const LAYER_OPTIONS: Array<{ id: MapLayer; label: string; Icon: typeof MapIcon; needsKey: boolean }> = [
+  { id: "streets", label: "Streets", Icon: MapIcon, needsKey: false },
+  { id: "satellite", label: "Satellite", Icon: Satellite, needsKey: true },
+  { id: "topo", label: "Topo", Icon: Mountain, needsKey: true },
+  { id: "light", label: "Light", Icon: Sun, needsKey: false },
+];
 
 function useResponsiveMode(): Mode {
   const [mode, setMode] = useState<Mode>("mobile");
@@ -51,11 +64,7 @@ function useResponsiveMode(): Mode {
 
 export default function PlannerPage() {
   const responsive = useResponsiveMode();
-  const mapRef = useRef<{
-    zoomIn: () => void;
-    zoomOut: () => void;
-    recenter: () => void;
-  } | null>(null);
+  const mapRef = useRef<RealMapHandle | null>(null);
 
   const [origin, setOrigin] = useState<string>("");
   const [destination, setDestination] = useState<string>("");
@@ -73,6 +82,11 @@ export default function PlannerPage() {
   const [desktopRail, setDesktopRail] = useState<"expanded" | "collapsed">(
     "collapsed",
   );
+  const [layer, setLayer] = useState<MapLayer>("streets");
+  const [pinkFilter, setPinkFilter] = useState(false);
+  const [layerMenuOpen, setLayerMenuOpen] = useState(false);
+  const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
+  const [pickOnMapHint, setPickOnMapHint] = useState(false);
 
   const maptilerKey = process.env.NEXT_PUBLIC_MAPTILER_KEY || undefined;
 
@@ -100,7 +114,12 @@ export default function PlannerPage() {
       const res = await fetch("/api/plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ origin, destination, mode, pairId: activePairId }),
+        body: JSON.stringify({
+          origin,
+          destination,
+          mode,
+          ...(activePairId ? { pairId: activePairId } : {}),
+        }),
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
@@ -142,6 +161,16 @@ export default function PlannerPage() {
     setError(null);
   }
 
+  async function handleMapClick(loc: { lat: number; lng: number }) {
+    if (!pickOnMapHint) return;
+    setUserLocation({ lat: loc.lat, lng: loc.lng, label: "Pinned on map" });
+    setOrigin(`Pinned (${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)})`);
+    setActivePairId(null);
+    setError(null);
+    setPickOnMapHint(false);
+    setMobileCard("expanded");
+  }
+
   const dist = selectedRealRoad?.distanceKm ?? result?.recommended.totalDistanceKm;
   const durMin = selectedRealRoad
     ? selectedRealRoad.durationMin
@@ -171,20 +200,129 @@ export default function PlannerPage() {
       </button>
       <button
         type="button"
-        onClick={() => mapRef.current?.recenter()}
-        aria-label="Recenter"
+        onClick={() => {
+          if (typeof navigator === "undefined" || !navigator.geolocation) {
+            setError("Geolocation is not supported in this browser.");
+            return;
+          }
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              setUserLocation({
+                lat: pos.coords.latitude,
+                lng: pos.coords.longitude,
+                label: "My current location",
+              });
+              setError(null);
+            },
+            (err) =>
+              setError(err.message || "Could not get your location."),
+            { enableHighAccuracy: true, timeout: 10_000, maximumAge: 60_000 },
+          );
+        }}
+        aria-label="Locate me"
+        title="Locate me"
         className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-primary-500 shadow-[0_4px_14px_rgba(82,63,160,0.18)] active:scale-95"
       >
         <Crosshair className="h-4 w-4" strokeWidth={2.4} />
       </button>
       <button
         type="button"
-        onClick={() => mapRef.current?.recenter()}
-        aria-label="Layers"
-        className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-primary-500 shadow-[0_4px_14px_rgba(82,63,160,0.18)] active:scale-95"
+        onClick={() => setPickOnMapHint((v) => !v)}
+        aria-label="Pick origin on map"
+        title="Click on the map to set origin"
+        className={
+          "flex h-10 w-10 items-center justify-center rounded-full shadow-[0_4px_14px_rgba(82,63,160,0.18)] active:scale-95 " +
+          (pickOnMapHint
+            ? "bg-primary-500 text-white"
+            : "bg-white text-primary-500")
+        }
       >
-        <Layers className="h-4 w-4" strokeWidth={2.4} />
+        <MapPinned className="h-4 w-4" strokeWidth={2.4} />
       </button>
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setLayerMenuOpen((v) => !v)}
+          aria-label="Map style"
+          title="Change map style"
+          className={
+            "flex h-10 w-10 items-center justify-center rounded-full shadow-[0_4px_14px_rgba(82,63,160,0.18)] active:scale-95 " +
+            (layerMenuOpen
+              ? "bg-primary-500 text-white"
+              : "bg-white text-primary-500")
+          }
+        >
+          <Layers className="h-4 w-4" strokeWidth={2.4} />
+        </button>
+        {layerMenuOpen && (
+          <div
+            className="absolute right-12 top-0 z-30 w-44 overflow-hidden rounded-2xl border border-white/60 bg-white/95 shadow-[0_8px_24px_rgba(82,63,160,0.22)] backdrop-blur-xl"
+            role="menu"
+          >
+            <div className="px-3 py-2 text-[9px] font-semibold uppercase tracking-wider text-ink-500">
+              Map style
+            </div>
+            {LAYER_OPTIONS.map((opt) => {
+              const disabled = opt.needsKey && !maptilerKey;
+              const active = layer === opt.id;
+              const Icon = opt.Icon;
+              return (
+                <button
+                  key={opt.id}
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => {
+                    setLayer(opt.id);
+                    setLayerMenuOpen(false);
+                  }}
+                  className={
+                    "flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors " +
+                    (active
+                      ? "bg-primary-50 text-primary-600"
+                      : "text-ink-700 hover:bg-primary-50/60") +
+                    (disabled ? " cursor-not-allowed opacity-40" : "")
+                  }
+                >
+                  <Icon className="h-3.5 w-3.5" strokeWidth={2.4} />
+                  <span className="flex-1 font-semibold">{opt.label}</span>
+                  {active && (
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary-500" />
+                  )}
+                </button>
+              );
+            })}
+            <button
+              type="button"
+              onClick={() => {
+                setPinkFilter((v) => !v);
+                setLayerMenuOpen(false);
+              }}
+              className={
+                "flex w-full items-center gap-2 border-t border-ink-300/10 px-3 py-2 text-left text-xs " +
+                (pinkFilter
+                  ? "bg-primary-50 text-primary-600"
+                  : "text-ink-700 hover:bg-primary-50/60")
+              }
+            >
+              <Palette className="h-3.5 w-3.5" strokeWidth={2.4} />
+              <span className="flex-1 font-semibold">Pink filter</span>
+              <span
+                className={
+                  "inline-flex h-3.5 w-7 items-center rounded-full px-0.5 transition-colors " +
+                  (pinkFilter ? "bg-primary-500" : "bg-ink-300/40")
+                }
+              >
+                <span
+                  className={
+                    "h-2.5 w-2.5 rounded-full bg-white shadow-sm transition-transform " +
+                    (pinkFilter ? "translate-x-3.5" : "translate-x-0")
+                  }
+                />
+              </span>
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 
@@ -329,6 +467,10 @@ export default function PlannerPage() {
           originLabel={origin || "Origin"}
           destinationLabel={destination || "Destination"}
           maptilerKey={maptilerKey}
+          layer={layer}
+          pinkFilter={pinkFilter}
+          userLocation={userLocation}
+          onMapClick={handleMapClick}
         />
             <SearchBar
               origin={origin}
@@ -351,6 +493,11 @@ export default function PlannerPage() {
             />
         {RightControls}
         {MobileFloatingCard}
+        {pickOnMapHint && (
+          <div className="pointer-events-none absolute left-1/2 top-20 z-40 -translate-x-1/2 rounded-full bg-primary-500 px-4 py-2 text-[11px] font-semibold text-white shadow-[0_4px_16px_rgba(223,0,89,0.35)]">
+            Tap the map to set your origin
+          </div>
+        )}
         {result && (
           <RouteDetailsModal
             open={detailsOpen}
@@ -497,6 +644,10 @@ export default function PlannerPage() {
             originLabel={origin || "Origin"}
             destinationLabel={destination || "Destination"}
             maptilerKey={maptilerKey}
+            layer={layer}
+            pinkFilter={pinkFilter}
+            userLocation={userLocation}
+            onMapClick={handleMapClick}
           />
           <SearchBar
             origin={origin}
@@ -512,6 +663,11 @@ export default function PlannerPage() {
             hasResult={!!result}
           />
           {RightControls}
+          {pickOnMapHint && (
+            <div className="pointer-events-none absolute left-1/2 top-24 z-40 -translate-x-1/2 rounded-full bg-primary-500 px-4 py-2 text-[11px] font-semibold text-white shadow-[0_4px_16px_rgba(223,0,89,0.35)]">
+              Tap the map to set your origin
+            </div>
+          )}
         </div>
         {DesktopRail}
       </div>

@@ -164,6 +164,43 @@ export function MapCanvas({
             );
           })}
 
+        {showFullGraph &&
+          graph.edges.map((e) => {
+            const a = positions[e.from];
+            const b = positions[e.to];
+            if (!a || !b) return null;
+            const mx = (a.x + b.x) / 2;
+            const my = (a.y + b.y) / 2;
+            const tollLabel = e.tollRM > 0 ? `RM ${e.tollRM.toFixed(2)}` : "free";
+            return (
+              <g key={`lbl-${e.id}`} transform={`translate(${mx}, ${my})`}>
+                <rect
+                  x={-22}
+                  y={-8}
+                  width={44}
+                  height={14}
+                  rx={7}
+                  ry={7}
+                  fill="#ffffff"
+                  fillOpacity={0.85}
+                  stroke={e.tollRM > 0 ? "#df0059" : "#9ca3af"}
+                  strokeWidth={0.75}
+                />
+                <text
+                  x={0}
+                  y={3}
+                  textAnchor="middle"
+                  fontSize="8"
+                  fontWeight={600}
+                  fill={e.tollRM > 0 ? "#cc0d5a" : "#6e6b85"}
+                  style={{ letterSpacing: 0.2 }}
+                >
+                  {tollLabel}
+                </text>
+              </g>
+            );
+          })}
+
         {pathEdges.map(({ from, to, key }) => (
           <line
             key={`route-${key}`}
