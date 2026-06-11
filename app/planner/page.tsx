@@ -12,6 +12,7 @@ import {
   MapPinned,
   ChevronRight,
   ChevronLeft,
+  ChevronDown,
   Loader2,
   Palette,
   Map as MapIcon,
@@ -369,8 +370,8 @@ export default function PlannerPage() {
         "bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(255,255,255,0.85)_100%)] " +
         "backdrop-blur-xl backdrop-saturate-150 shadow-[0_-4px_24px_rgba(204,13,90,0.18)] " +
         "transition-[max-height,opacity] duration-300 ease-out " +
-        (mobileCard === "expanded" ? "max-h-[78vh]" : "max-h-[78px]") +
-        " overflow-y-auto"
+        (mobileCard === "expanded" ? "max-h-[78vh]" : "max-h-[88px]") +
+        " overflow-hidden flex flex-col"
       }
     >
       {/* Drag handle / toggle */}
@@ -379,13 +380,13 @@ export default function PlannerPage() {
         onClick={() =>
           setMobileCard((p) => (p === "expanded" ? "peek" : "expanded"))
         }
-        className="sticky top-0 z-10 flex w-full items-center justify-center bg-transparent py-2"
+        className="shrink-0 flex w-full items-center justify-center bg-transparent py-1.5"
         aria-label="Toggle card"
       >
         <span className="h-1.5 w-12 rounded-full bg-ink-300/60" />
       </button>
 
-      <div className="space-y-2 px-3 pb-3">
+      <div className="flex-1 min-h-0 space-y-2 px-3 pb-3 overflow-y-auto">
         {/* Always-visible row: priority + Find */}
         <div className="flex items-center gap-2">
           <div className="flex-1">
@@ -398,7 +399,16 @@ export default function PlannerPage() {
             size="sm"
             className="!w-auto !px-4"
           >
-            {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Find"}
+            {loading ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <span>Finding…</span>
+              </>
+            ) : result ? (
+              "Re-find"
+            ) : (
+              "Find"
+            )}
           </PrimaryButton>
         </div>
 
@@ -407,46 +417,117 @@ export default function PlannerPage() {
         {/* Expanded body */}
         {mobileCard === "expanded" && (
           <>
-            {MiniBento}
-            {result && mode === "budget" && (
-              <CalculationPanel
-                route={result.routes[selectedIdx] ?? result.recommended}
-                graph={result.graph}
-                mode={mode}
-              />
-            )}
-            {result && result.routes.length > 1 && (
-              <div className="mt-2 space-y-1.5">
-                <div className="flex items-center justify-between px-1 text-[9px] font-semibold uppercase tracking-wider text-ink-500">
-                  <span>All routes</span>
-                  <span className="text-ink-300 normal-case tracking-normal">
-                    {result.routes.length}
-                  </span>
+            {/* Header row: title + back/edit button */}
+            <div className="flex items-center justify-between border-b border-ink-300/10 pb-1.5">
+              <div className="min-w-0">
+                <div className="text-[9px] font-semibold uppercase tracking-wider text-ink-500">
+                  {result ? "Trip result" : "Plan a trip"}
                 </div>
-                <div className="max-h-48 overflow-y-auto pr-0.5">
-                  {result.routes.map((r, i) => (
-                    <RouteListItem
-                      key={`${r.edgeIds.join("-")}-${i}`}
-                      rank={i + 1}
-                      route={r}
-                      graph={result.graph}
-                      realRoad={result.realRoads?.[i] ?? null}
-                      isSelected={i === selectedIdx}
-                      onSelect={() => setSelectedIdx(i)}
-                    />
-                  ))}
+                <div className="truncate text-xs font-bold text-ink-900">
+                  {result
+                    ? `${origin || "Origin"} → ${destination || "Destination"}`
+                    : "Pick an origin & destination"}
                 </div>
               </div>
-            )}
-            {result && (
-              <div className="px-1 text-[9px] uppercase tracking-wider text-ink-300">
-                Source: {result.source} · {result.graph.junctions.length}{" "}
-                junctions · {result.graph.edges.length} edges
-                {result.realRoads?.some(Boolean) && " · real road ✓"}
+              {result ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileCard("peek");
+                    setResult(null);
+                    setError(null);
+                    setSelectedIdx(0);
+                    setDetailsOpen(false);
+                  }}
+                  className="flex h-8 shrink-0 items-center gap-1 rounded-full border border-primary-200 bg-white px-2.5 text-[11px] font-semibold text-primary-600 shadow-sm active:scale-95"
+                  aria-label="Back to search"
+                  title="Clear result and edit search"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                  Edit
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setMobileCard("peek")}
+                  className="flex h-8 shrink-0 items-center gap-1 rounded-full border border-ink-300/20 bg-white px-2.5 text-[11px] font-semibold text-ink-700 shadow-sm active:scale-95"
+                  aria-label="Collapse"
+                >
+                  <ChevronDown className="h-3.5 w-3.5" />
+                  Hide
+                </button>
+              )}
+            </div>
+
+            {result ? (
+              <>
+                {MiniBento}
+                {mode === "budget" && (
+                  <CalculationPanel
+                    route={result.routes[selectedIdx] ?? result.recommended}
+                    graph={result.graph}
+                    mode={mode}
+                  />
+                )}
+                {result.routes.length > 1 && (
+                  <div className="mt-2 space-y-1.5">
+                    <div className="flex items-center justify-between px-1 text-[9px] font-semibold uppercase tracking-wider text-ink-500">
+                      <span>All routes</span>
+                      <span className="text-ink-300 normal-case tracking-normal">
+                        {result.routes.length}
+                      </span>
+                    </div>
+                    <div className="max-h-48 overflow-y-auto pr-0.5">
+                      {result.routes.map((r, i) => (
+                        <RouteListItem
+                          key={`${r.edgeIds.join("-")}-${i}`}
+                          rank={i + 1}
+                          route={r}
+                          graph={result.graph}
+                          realRoad={result.realRoads?.[i] ?? null}
+                          isSelected={i === selectedIdx}
+                          onSelect={() => setSelectedIdx(i)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div className="px-1 text-[9px] uppercase tracking-wider text-ink-300">
+                  Source: {result.source} · {result.graph.junctions.length}{" "}
+                  junctions · {result.graph.edges.length} edges
+                  {result.realRoads?.some(Boolean) && " · real road ✓"}
+                </div>
+              </>
+            ) : (
+              <div className="rounded-2xl border border-white/60 bg-white/70 p-3 text-[11px] text-ink-700">
+                <div className="font-semibold text-primary-600">How to start</div>
+                <ol className="mt-1.5 list-decimal space-y-1 pl-4 leading-snug">
+                  <li>Tap the search bar above and pick an origin.</li>
+                  <li>Choose a destination, or pick a hardcoded pair.</li>
+                  <li>Switch to <span className="font-semibold">Budget</span> to see the W calculation.</li>
+                  <li>Hit <span className="font-semibold">Find</span>.</li>
+                </ol>
               </div>
             )}
           </>
         )}
+      </div>
+    </div>
+  );
+
+  // ============================
+  // Full-screen loading overlay (clear "system is loading" indicator)
+  // ============================
+  const LoadingOverlay = loading && (
+    <div className="pointer-events-auto absolute inset-0 z-[1100] flex flex-col items-center justify-center gap-3 bg-black/35 backdrop-blur-sm">
+      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 shadow-[0_8px_28px_rgba(223,0,89,0.35)]">
+        <Loader2 className="h-7 w-7 animate-spin text-primary-500" strokeWidth={2.4} />
+      </div>
+      <div className="rounded-full bg-white/95 px-4 py-2 text-xs font-semibold text-ink-900 shadow-lg">
+        Finding the best route…
+      </div>
+      <div className="text-[10px] font-medium text-white/90">
+        Crunching {mode === "time" ? "time" : "budget"} weights across {result?.graph.junctions.length ?? "the"} junctions
       </div>
     </div>
   );
@@ -493,6 +574,7 @@ export default function PlannerPage() {
             />
         {RightControls}
         {MobileFloatingCard}
+        {LoadingOverlay}
         {pickOnMapHint && (
           <div className="pointer-events-none absolute left-1/2 top-20 z-40 -translate-x-1/2 rounded-full bg-primary-500 px-4 py-2 text-[11px] font-semibold text-white shadow-[0_4px_16px_rgba(223,0,89,0.35)]">
             Tap the map to set your origin
@@ -571,16 +653,35 @@ export default function PlannerPage() {
                 JimatJourney
               </h1>
             </div>
-            <span className="shrink-0 rounded-full bg-primary-50 px-2 py-0.5 text-[9px] font-semibold text-primary-600">
-              β = {mode === "time" ? "0.5" : "2.5"}
-            </span>
+            <div className="flex shrink-0 items-center gap-1.5">
+              {result && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setResult(null);
+                    setError(null);
+                    setSelectedIdx(0);
+                    setDetailsOpen(false);
+                  }}
+                  className="flex h-6 items-center gap-1 rounded-full border border-primary-200 bg-white px-2 text-[10px] font-semibold text-primary-600 shadow-sm active:scale-95"
+                  aria-label="Back to search"
+                  title="Clear result and edit search"
+                >
+                  <ChevronLeft className="h-3 w-3" />
+                  Edit
+                </button>
+              )}
+              <span className="shrink-0 rounded-full bg-primary-50 px-2 py-0.5 text-[9px] font-semibold text-primary-600">
+                β = {mode === "time" ? "0.5" : "2.5"}
+              </span>
+            </div>
           </header>
 
           <div className="flex-1 space-y-3 overflow-y-auto px-3 py-3">
             {error && <ErrorBanner message={error} />}
             {MiniBento}
 
-            {result && mode === "budget" && (
+            {result && (
               <CalculationPanel
                 route={result.routes[selectedIdx] ?? result.recommended}
                 graph={result.graph}
@@ -663,6 +764,7 @@ export default function PlannerPage() {
             hasResult={!!result}
           />
           {RightControls}
+          {LoadingOverlay}
           {pickOnMapHint && (
             <div className="pointer-events-none absolute left-1/2 top-24 z-40 -translate-x-1/2 rounded-full bg-primary-500 px-4 py-2 text-[11px] font-semibold text-white shadow-[0_4px_16px_rgba(223,0,89,0.35)]">
               Tap the map to set your origin
