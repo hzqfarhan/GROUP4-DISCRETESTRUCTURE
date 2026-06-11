@@ -100,52 +100,6 @@ export function RouteDetailsPanel({
         </div>
       </GlassCard>
 
-      {/* Turn-by-turn directions */}
-      <GlassCard className="p-3">
-        <div className="mb-2 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-ink-500">
-          <span className="flex items-center gap-1">
-            <RouteIcon className="h-3 w-3" />
-            Turn-by-turn directions
-          </span>
-          <span className="text-ink-300 normal-case tracking-normal">
-            {maneuvers.length} steps
-          </span>
-        </div>
-        {maneuvers.length > 0 ? (
-          <ol className="space-y-1">
-            {maneuvers.map((m, i) => (
-              <li
-                key={i}
-                className="flex items-start gap-2 rounded-lg p-1.5 hover:bg-primary-50/40"
-              >
-                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-50 text-[10px] font-bold text-primary-600">
-                  {i + 1}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-baseline gap-1.5 text-[11px] font-semibold text-ink-900">
-                    <span className="text-primary-500">
-                      {maneuverIcon(m.type)}
-                    </span>
-                    <span className="truncate">{m.instruction}</span>
-                  </div>
-                  <div className="mt-0.5 flex items-center gap-2 text-[9px] text-ink-500 tabular-nums">
-                    <span>{fmtMeters(m.distanceMeters)}</span>
-                    <span className="text-ink-300">·</span>
-                    <span>{fmtMin(Math.round(m.durationSeconds / 60))}</span>
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ol>
-        ) : (
-          <div className="rounded-lg border border-dashed border-ink-300/20 p-2 text-[10px] text-ink-500">
-            Step-by-step directions aren&rsquo;t available for this route
-            yet — the OSRM public server may be rate-limited. The graph
-            timeline below still shows every junction.
-          </div>
-        )}
-      </GlassCard>
-
       {/* Graph-level timeline (junctions + edges) */}
       <GlassCard className="p-3">
         <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-ink-500">
@@ -194,6 +148,52 @@ export function RouteDetailsPanel({
             );
           })}
         </ol>
+      </GlassCard>
+
+      {/* Turn-by-turn directions */}
+      <GlassCard className="p-3">
+        <div className="mb-2 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-ink-500">
+          <span className="flex items-center gap-1">
+            <RouteIcon className="h-3 w-3" />
+            Turn-by-turn directions
+          </span>
+          <span className="text-ink-300 normal-case tracking-normal">
+            {maneuvers.length} steps
+          </span>
+        </div>
+        {maneuvers.length > 0 ? (
+          <ol className="space-y-1">
+            {maneuvers.map((m, i) => (
+              <li
+                key={i}
+                className="flex items-start gap-2 rounded-lg p-1.5 hover:bg-primary-50/40"
+              >
+                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-50 text-[10px] font-bold text-primary-600">
+                  {i + 1}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-baseline gap-1.5 text-[11px] font-semibold text-ink-900">
+                    <span className="text-primary-500">
+                      {maneuverIcon(m.type)}
+                    </span>
+                    <span className="truncate">{m.instruction}</span>
+                  </div>
+                  <div className="mt-0.5 flex items-center gap-2 text-[9px] text-ink-500 tabular-nums">
+                    <span>{fmtMeters(m.distanceMeters)}</span>
+                    <span className="text-ink-300">·</span>
+                    <span>{fmtMin(Math.round(m.durationSeconds / 60))}</span>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <div className="rounded-lg border border-dashed border-ink-300/20 p-2 text-[10px] text-ink-500">
+            Step-by-step directions aren&rsquo;t available for this route
+            yet — the OSRM public server may be rate-limited. The graph
+            timeline above still shows every junction.
+          </div>
+        )}
       </GlassCard>
     </div>
   );
