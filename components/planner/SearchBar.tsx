@@ -175,11 +175,11 @@ export function SearchBar({
 
   return (
     <div className="pointer-events-auto absolute left-0 right-0 top-3 z-30 px-3 sm:top-4 sm:px-4">
-      <div className="flex items-center gap-2">
+      <div className="mx-auto flex w-full max-w-2xl items-center gap-2">
         {/* Pill */}
         <div
           className={
-            "flex h-12 flex-1 items-center gap-2 rounded-full border border-white/60 bg-white/95 px-4 shadow-[0_4px_16px_rgba(82,63,160,0.18)] backdrop-blur-xl transition-all " +
+            "flex h-12 min-w-0 flex-1 items-center gap-2 rounded-full border border-white/60 bg-white/95 pl-4 pr-2 shadow-[0_4px_16px_rgba(82,63,160,0.18)] backdrop-blur-xl transition-all " +
             (open ? "rounded-b-none rounded-t-3xl ring-2 ring-primary-200" : "")
           }
         >
@@ -189,7 +189,7 @@ export function SearchBar({
               setOpen((v) => !v);
               if (!open) setEditing("origin");
             }}
-            className="flex-1 truncate text-left text-sm font-semibold text-ink-900"
+            className="min-w-0 flex-1 truncate text-left text-sm font-semibold text-ink-900"
           >
             {origin || destination
               ? `${origin || "Origin"} → ${destination || "Destination"}`
