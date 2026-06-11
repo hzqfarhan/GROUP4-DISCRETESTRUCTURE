@@ -587,6 +587,7 @@ export default function PlannerPage() {
       <div className="flex-1 min-h-0 space-y-2 px-3 pb-3 overflow-y-auto">
         {/* Always-visible row: priority + Find */}
         <div className="flex items-center gap-2">
+          <PriorityToggle mode={mode} onChange={setMode} />
           <PrimaryButton
             onClick={handleFind}
             loading={loading}
@@ -849,9 +850,7 @@ export default function PlannerPage() {
                   Edit
                 </button>
               )}
-              <span className="shrink-0 rounded-full bg-primary-50 px-2 py-0.5 text-[9px] font-semibold text-primary-600">
-                β = {mode === "time" ? "0.5" : "2.5"}
-              </span>
+              <PriorityToggle mode={mode} onChange={setMode} />
             </div>
           </header>
 

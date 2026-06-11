@@ -9,7 +9,7 @@ interface PriorityToggleProps {
 
 export function PriorityToggle({ mode, onChange }: PriorityToggleProps) {
   return (
-    <div className="flex h-8 w-full rounded-full border border-white/70 bg-white/40 p-0.5 backdrop-blur">
+    <div className="flex h-7 shrink-0 rounded-full border border-white/70 bg-white/40 p-0.5 backdrop-blur">
       {(
         [
           {
@@ -20,7 +20,7 @@ export function PriorityToggle({ mode, onChange }: PriorityToggleProps) {
           },
           {
             key: "budget" as const,
-            label: "Calculation",
+            label: "Budget",
             icon: Calculator,
             accent: "text-primary-700",
           },
@@ -33,7 +33,7 @@ export function PriorityToggle({ mode, onChange }: PriorityToggleProps) {
             type="button"
             onClick={() => onChange(key)}
             className={
-              "flex flex-1 items-center justify-center gap-1 rounded-full text-[11px] font-semibold transition-all " +
+              "flex items-center justify-center gap-1 rounded-full px-2.5 text-[10px] font-semibold transition-all " +
               (active
                 ? "bg-white text-primary-600 shadow-[0_2px_6px_rgba(204,13,90,0.10)]"
                 : "text-ink-500 hover:text-ink-700")
