@@ -81,7 +81,33 @@ async function callOnce(
     ? `Origin: ${origin}\nDestination: ${destination}\nReturn ONLY the JSON object. No markdown, no commentary. Start with { and end with }.`
     : `Origin: ${origin}\nDestination: ${destination}`;
 
-  const res = await fetch(`${baseUrl.replace(/\/$/, "")}/chat/completions`, {
+  // Use native Gemini REST API if baseUrl points to Google
+  if (baseUrl.includes("generativelanguage.googleapis.com")) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        contents: [{ parts: [{ text: userText }] }],
+        generationConfig: { temperature: 0.2, responseMimeType: "application/json" }
+      }),
+    });
+    
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`Gemini API request failed (${res.status}): ${body.slice(0, 200)}`);
+    }
+    
+    const data = await res.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!content || !content.trim()) {
+      throw new Error("Empty response from Gemini");
+    }
+    return extractJson(content);
+  }
+
+  const res = await fetch(`${baseUrl.replace(/\\/$/, "")}/chat/completions`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
