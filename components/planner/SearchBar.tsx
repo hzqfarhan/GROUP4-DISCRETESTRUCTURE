@@ -174,7 +174,7 @@ export function SearchBar({
   const showPairChips = open && !hasResult;
 
   return (
-    <div className="pointer-events-auto absolute left-0 right-0 top-3 z-30 px-3 sm:top-4 sm:px-4">
+    <div className="pointer-events-auto absolute left-0 right-0 top-3 z-30 pl-14 pr-3 sm:top-4 sm:pl-16 sm:pr-4">
       <div className="mx-auto flex w-full max-w-2xl items-center gap-2">
         {/* Pill */}
         <div

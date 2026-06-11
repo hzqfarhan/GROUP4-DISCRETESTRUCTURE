@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
+import Link from "next/link";
 import {
   Plus,
   Minus,
@@ -15,6 +16,7 @@ import {
   ChevronDown,
   Loader2,
   Palette,
+  BookOpen,
   Map as MapIcon,
   Satellite,
   Mountain,
@@ -179,10 +181,17 @@ export default function PlannerPage() {
   const toll = result?.stats.tollRM ?? 0;
 
   // ============================
-  // Right-side map controls (Google-Maps style)
+  // Right-side map controls (Google-Maps style) — bottom-right, sitting
+  // just above the floating card so they never collide with the search
+  // bar (top) or the result card (bottom) on narrow screens.
   // ============================
   const RightControls = (
-    <div className="absolute right-3 top-32 z-20 flex flex-col gap-2 sm:right-4 sm:top-40">
+    <div
+      className={
+        "absolute right-3 z-20 flex flex-col gap-2 sm:right-4 " +
+        (mobileCard === "expanded" ? "bottom-[78vh]" : "bottom-[110px] sm:bottom-24")
+      }
+    >
       <button
         type="button"
         onClick={() => mapRef.current?.zoomIn()}
@@ -537,6 +546,19 @@ export default function PlannerPage() {
     </div>
   );
 
+  // Floating About button — top-left, away from the search bar so it
+  // doesn't overlap on mobile.
+  const AboutButton = (
+    <Link
+      href="/about"
+      aria-label="How it works"
+      title="How it works"
+      className="pointer-events-auto absolute left-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-primary-500 shadow-[0_4px_14px_rgba(82,63,160,0.18)] backdrop-blur-xl active:scale-95 sm:left-4 sm:top-4"
+    >
+      <BookOpen className="h-4 w-4" strokeWidth={2.4} />
+    </Link>
+  );
+
   // ============================
   // Mobile
   // ============================
@@ -580,6 +602,7 @@ export default function PlannerPage() {
             />
         {RightControls}
         {MobileFloatingCard}
+        {AboutButton}
         {LoadingOverlay}
         {pickOnMapHint && (
           <div className="pointer-events-none absolute left-1/2 top-20 z-40 -translate-x-1/2 rounded-full bg-primary-500 px-4 py-2 text-[11px] font-semibold text-white shadow-[0_4px_16px_rgba(223,0,89,0.35)]">
@@ -771,6 +794,7 @@ export default function PlannerPage() {
             hasResult={!!result}
           />
           {RightControls}
+          {AboutButton}
           {LoadingOverlay}
           {pickOnMapHint && (
             <div className="pointer-events-none absolute left-1/2 top-24 z-40 -translate-x-1/2 rounded-full bg-primary-500 px-4 py-2 text-[11px] font-semibold text-white shadow-[0_4px_16px_rgba(223,0,89,0.35)]">
