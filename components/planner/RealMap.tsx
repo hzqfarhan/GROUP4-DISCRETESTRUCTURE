@@ -44,6 +44,10 @@ interface RealMapProps {
   onMapClick?: (loc: { lat: number; lng: number }) => void;
   onLocateRequest?: () => void;
   mode?: OptimizationMode;
+  // Optional OSRM geometry for the currently selected route. When
+  // present it is used to fit the map (more accurate than junction
+  // coords, which are sparse waypoints).
+  selectedRouteGeometry?: { lat: number; lng: number }[] | null;
 }
 
 function junctionAt(graph: WeightedGraph, id: string) {
@@ -81,19 +85,28 @@ const userIcon = L.divIcon({
   iconAnchor: [13, 13],
 });
 
-function FitBounds({ coords }: { coords: { lat: number; lng: number }[] }) {
+function FitBounds({ coords, pathKey }: { coords: { lat: number; lng: number }[]; pathKey?: string }) {
   const map = useMap();
   useEffect(() => {
     if (coords.length === 0) return;
     if (coords.length === 1) {
-      map.setView([coords[0]!.lat, coords[0]!.lng], 13);
+      map.flyTo([coords[0]!.lat, coords[0]!.lng], 13, { duration: 0.6 });
       return;
     }
     const bounds = L.latLngBounds(
       coords.map((c) => [c.lat, c.lng] as [number, number]),
     );
-    map.fitBounds(bounds, { padding: [60, 60] });
-  }, [coords, map]);
+    // flyToBounds is smoother and respects a sensible max zoom for
+    // long routes (no infinite zoom-in to a single point).
+    map.flyToBounds(bounds, {
+      padding: [80, 80],
+      duration: 0.6,
+      maxZoom: 13,
+    });
+    // pathKey forces a re-fit whenever the selected path identity
+    // changes (new route selected), even if the same map instance is
+    // being reused.
+  }, [coords, map, pathKey]);
   return null;
 }
 
@@ -372,6 +385,7 @@ export const RealMap = forwardRef<RealMapHandle, RealMapProps>(function RealMap(
     userLocation = null,
     onMapClick,
     mode,
+    selectedRouteGeometry = null,
   },
   ref,
 ) {
@@ -410,9 +424,19 @@ export const RealMap = forwardRef<RealMapHandle, RealMapProps>(function RealMap(
     selectedCoords[0] ?? allJunctionCoords[0] ?? { lat: 2.2, lng: 102.5 };
 
   const allVisibleCoords = useMemo(() => {
+    // Prefer the OSRM real-road geometry for the fit (it traces the
+    // actual road instead of straight line segments between junctions).
+    if (selectedRouteGeometry && selectedRouteGeometry.length >= 2) {
+      return selectedRouteGeometry;
+    }
     if (selectedCoords.length > 0) return selectedCoords;
     return allJunctionCoords;
-  }, [selectedCoords, allJunctionCoords]);
+  }, [selectedCoords, allJunctionCoords, selectedRouteGeometry]);
+
+  const selectedPathKey = useMemo(
+    () => (selectedPath ? selectedPath.join(">") : null),
+    [selectedPath],
+  );
 
   const originId = selectedPath?.[0];
   const destId = selectedPath?.[selectedPath.length - 1];
@@ -529,7 +553,7 @@ export const RealMap = forwardRef<RealMapHandle, RealMapProps>(function RealMap(
           );
         })}
 
-        <FitBounds coords={allVisibleCoords} />
+        <FitBounds coords={allVisibleCoords} pathKey={selectedPathKey ?? undefined} />
         <MapController onReady={setControllerApi} />
       </MapContainer>
 

@@ -671,6 +671,7 @@ export default function PlannerPage() {
           userLocation={userLocation}
           onMapClick={handleMapClick}
           mode={mode}
+          selectedRouteGeometry={selectedRealRoad?.geometry ?? null}
         />
             <SearchBar
               origin={origin}
@@ -870,6 +871,7 @@ export default function PlannerPage() {
             userLocation={userLocation}
             onMapClick={handleMapClick}
             mode={mode}
+            selectedRouteGeometry={selectedRealRoad?.geometry ?? null}
           />
           <SearchBar
             origin={origin}
