@@ -1,104 +1,42 @@
-# JJ — JimatJourney
+# JimatJourney 🛣️
 
-A PWA that finds the **optimal travel route** between **UTHM Parit Raja** and
-**Masjid Sri Sendayan** (or any other place in Malaysia), with two priority
-modes (**Time-Optimized** / **Budget-Optimized**) powered by a hand-implemented
-**Dijkstra's algorithm** on an undirected weighted graph. For free-text
-origin/destination pairs, the app uses **Photon** for geocoding and **Ollama
-Cloud** to generate a route graph, then runs the same Dijkstra locally with
-real road geometry from **OSRM**.
+## 📖 Overview
+JimatJourney is an intelligent, graph-based routing application developed for our Discrete Structure Group 4 project. It calculates the optimal driving route between an origin and a destination anywhere in Peninsular Malaysia by actively balancing **travel time** and **toll costs**.
 
-Built for the **BIK10602 Discrete Structure** group project.
+## 🎯 What is it for?
+The application helps users find the most cost-effective and time-efficient driving routes based on their current priorities. While standard GPS apps (like Google Maps or Waze) usually default to the fastest highway route regardless of expensive toll costs, JimatJourney explicitly calculates whether paying a toll is mathematically "worth it". Users can toggle between **Time Mode** (prioritize speed) and **Budget Mode** (prioritize saving money).
 
-> **JimatJourney (JJ)** — *Jimat* means "save" in Malay; *Journey* is the trip.
-> Save your journey, not your money.
+## 🧮 Concept & Calculations
+At its core, JimatJourney is a real-world implementation of **Dijkstra's Algorithm** and **Depth First Search (DFS)** running on a custom Weighted Graph. 
 
-## Stack
+Unlike traditional shortest-path algorithms that only optimize for distance, our engine uses a composite **Weight (W)** formula for every road (edge):
+> **W = Time + (Toll × β) + Penalty**
 
-- **Next.js 16** (App Router) + **TypeScript** + **Tailwind CSS v4**
-- **Hand-written Dijkstra** (no graph libraries) — see `lib/graph/dijkstra.ts`
-- **Zod** for validating AI responses and API bodies
-- **Ollama Cloud** for non-hardcoded origin/destination pairs
-- **PWA**: manifest + service worker for offline support of the hardcoded pair
+### What is Beta (β)?
+Beta (β) acts as the **Toll Conversion Rate**. It translates monetary cost (RM) into an equivalent time cost (Minutes) so the algorithm can compare them fairly.
+- **Time Mode (β = 0.5):** Every RM 1.00 is treated like only 0.5 minutes of extra driving. The algorithm happily pays tolls because the mathematical penalty for spending money is very low.
+- **Budget Mode (β = 2.5):** Every RM 1.00 is heavily penalized as 2.5 minutes of extra driving. The algorithm avoids expensive highways and actively seeks free federal or local roads because the toll "costs" too much time mathematically.
 
-## Setup
+### What is Penalty?
+Penalty is a **Real-World Inconvenience Score** (measured in arbitrary minutes). A federal route and a highway might technically both take 30 minutes, but the federal route has traffic lights, speed bumps, and school zones. We add a static `penaltyMin` to non-highway edges to mathematically teach the algorithm that these roads are more tedious to drive on, subtly encouraging highway usage when times are equal.
 
-```bash
-npm install
-cp .env.example .env.local          # then fill in OLLAMA_CLOUD_API_KEY
-npm run dev                         # http://localhost:3000
-```
+## 🔌 APIs Used
+1. **Google Gemini API (`gemini-2.5-flash`)**: Acts as our intelligent graph-generator. When a user searches for an un-hardcoded route, Gemini dynamically generates a realistic JSON graph of junctions and edges connecting the origin to the destination.
+2. **OSRM (Open Source Routing Machine)**: Used to fetch real-world road geometries (polylines), accurate driving distances, and durations for drawing the exact road shapes on the map.
+3. **MapTiler**: Provides the beautiful, high-performance base map tiles rendered underneath our routes.
+4. **Google Geocoding API**: Resolves arbitrary user string inputs into precise latitude and longitude coordinates.
 
-> The hardcoded UTHM → Masjid Sri Sendayan pair works **without** any API
-> key. The key is only required for free-text origin/destination inputs.
+## 🏗️ System Architecture
+JimatJourney is built as a modern, full-stack web application using **Next.js 16 (App Router)** and **TypeScript**.
 
-## Scripts
-
-| Command          | What it does                          |
-|------------------|---------------------------------------|
-| `npm run dev`    | Start the dev server                  |
-| `npm run build`  | Production build                      |
-| `npm run start`  | Start the production server           |
-| `npm run lint`   | Run ESLint                            |
-| `npx tsx scripts/smoke.ts` | Smoke-test the graph logic   |
-
-## How the optimization works
-
-Every road edge has four base properties: **distance**, **time**, **toll**,
-and a **road-type penalty** (for traffic lights, single lanes, etc.).
-At runtime, each edge's "weight" is computed as:
-
-```
-W = Time + (Toll × β) + Penalty
-```
-
-where the **β (Toll Penalty Factor)** is controlled by the user:
-
-| Mode             | β    | Effect on route choice                    |
-|------------------|------|-------------------------------------------|
-| Time-Optimized   | 0.5  | Tolls barely matter → PLUS Expressway     |
-| Budget-Optimized | 2.5  | Tolls add huge cost → Federal Route 1     |
-
-Dijkstra is then run on the weighted graph. The full graph is also
-explored with bounded DFS to surface up to 5 alternative routes, which
-are listed in the UI and can be tapped to swap onto the map.
-
-## Project structure
-
-```
-app/
-  page.tsx              # landing
-  planner/page.tsx      # main interactive map + bottom sheet
-  about/page.tsx        # graph theory explainer
-  api/plan/route.ts     # POST /api/plan
-components/
-  ui/                   # GlassCard, StatusBar, PhoneFrame, PrimaryButton
-  planner/              # MapCanvas, BottomSheet, GlassSearchPill, etc.
-lib/
-  graph/                # types, hardcoded graph, weight, dijkstra, stats
-  ai/ollama.ts          # Zod-validated Ollama Cloud client
-public/
-  manifest.json, sw.js, icon-*.png
-```
-
-## Demo screenshots to capture for the report
-
-1. **Planner with default inputs** — the pastel map with the gradient
-   route, glass search pill, and FABs visible.
-2. **Time-Optimized result** — recommended route is the PLUS Expressway
-   (220 km, 2h 40m, RM 24.50).
-3. **Budget-Optimized result** — recommended route is Federal Route 1
-   (225 km, 5h 3m, RM 0.00).
-4. **SVG map with the gradient purple polyline** — proves the graph
-   theory → visualization pipeline.
-5. **"How it works" page** — the weight formula + Dijkstra pseudocode.
-
-## Environment variables
-
-| Name                     | Required for    | Default                           |
-|--------------------------|-----------------|-----------------------------------|
-| `OLLAMA_CLOUD_API_KEY`   | AI fallback     | —                                 |
-| `OLLAMA_CLOUD_MODEL`     | AI fallback     | `llama3.1:70b`                    |
-| `OLLAMA_CLOUD_BASE_URL`  | AI fallback     | `https://api.ollama.cloud/v1`     |
-
-## Built for BIK10602 · Discrete Structure · Graph Theory Shortest Path
+1. **Frontend Layer (React & Tailwind CSS)**: 
+   - A highly responsive, mobile-first interface featuring dynamic bottom-sheets and sidebars.
+   - Interactive map rendered using `react-map-gl` and MapLibre.
+2. **Graph Theory Engine (TypeScript)**:
+   - Contains our custom `dijkstra.ts` implementation.
+   - Utilizes DFS (Depth First Search) to traverse all valid paths between the Origin and Destination up to a depth limit, calculates their `ΣW`, and sorts them to find the "Recommended" route.
+3. **AI Graph Generation Pipeline**:
+   - Takes the user's requested Origin/Destination and securely pings Gemini API natively via REST.
+   - Parses the JSON output to construct a valid `WeightedGraph` object containing nodes and edges on the fly.
+4. **Real-World Geometry Mapper**:
+   - Takes the theoretical graph path (e.g., Node A -> Node B) and passes the coordinates to OSRM to get the exact road curves to draw on the map perfectly.
