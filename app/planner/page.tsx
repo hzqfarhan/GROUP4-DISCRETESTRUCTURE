@@ -78,6 +78,14 @@ export default function PlannerPage() {
     null,
   );
   const [mode, setMode] = useState<OptimizationMode>("time");
+
+  // Re-fetch automatically if the mode is toggled while a result is visible
+  useEffect(() => {
+    if (result) {
+      handleFind();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<PlanResponse | null>(null);
@@ -833,23 +841,6 @@ export default function PlannerPage() {
               </h1>
             </div>
             <div className="flex shrink-0 items-center gap-1.5">
-              {result && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setResult(null);
-                    setError(null);
-                    setSelectedIdx(0);
-                    setDetailsOpen(false);
-                  }}
-                  className="flex h-6 items-center gap-1 rounded-full border border-primary-200 bg-white px-2 text-[10px] font-semibold text-primary-600 shadow-sm active:scale-95"
-                  aria-label="Back to search"
-                  title="Clear result and edit search"
-                >
-                  <ChevronLeft className="h-3 w-3" />
-                  Edit
-                </button>
-              )}
               <PriorityToggle mode={mode} onChange={setMode} />
             </div>
           </header>
