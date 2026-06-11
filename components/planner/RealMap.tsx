@@ -52,6 +52,9 @@ interface RealMapProps {
   // overlay card). Lets the fit land the route in the visible
   // (non-occluded) part of the map.
   bottomCardPadding?: number;
+  // When false, hide the per-edge weight pills drawn at the
+  // midpoint of every edge on the selected route.
+  showWeightPills?: boolean;
 }
 
 function junctionAt(graph: WeightedGraph, id: string) {
@@ -423,6 +426,7 @@ export const RealMap = forwardRef<RealMapHandle, RealMapProps>(function RealMap(
     mode,
     selectedRouteGeometry = null,
     bottomCardPadding = 0,
+    showWeightPills = true,
   },
   ref,
 ) {
@@ -568,7 +572,7 @@ export const RealMap = forwardRef<RealMapHandle, RealMapProps>(function RealMap(
           <SelectedPolyline graph={graph} path={selectedPath} />
         )}
 
-        {selectedPath && (
+        {selectedPath && showWeightPills && (
           <WeightPills graph={graph} path={selectedPath} mode={mode} />
         )}
 

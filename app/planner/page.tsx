@@ -19,6 +19,7 @@ import {
   BookOpen,
   Route as RouteIcon,
   Calculator as CalculatorIcon,
+  Sigma,
   Map as MapIcon,
   Satellite,
   Mountain,
@@ -121,6 +122,7 @@ export default function PlannerPage() {
   const [layer, setLayer] = useState<MapLayer>("topo");
   const [pinkFilter, setPinkFilter] = useState(false);
   const [layerMenuOpen, setLayerMenuOpen] = useState(false);
+  const [showWeightPills, setShowWeightPills] = useState(true);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const [pickOnMapHint, setPickOnMapHint] = useState(false);
 
@@ -376,6 +378,22 @@ export default function PlannerPage() {
           </div>
         )}
       </div>
+      <button
+        type="button"
+        onClick={() => setShowWeightPills((v) => !v)}
+        aria-label="Toggle weight pills on map"
+        title={
+          showWeightPills ? "Hide edge weights" : "Show edge weights"
+        }
+        className={
+          "flex h-10 w-10 items-center justify-center rounded-full shadow-[0_4px_14px_rgba(82,63,160,0.18)] active:scale-95 " +
+          (showWeightPills
+            ? "bg-primary-500 text-white"
+            : "bg-white text-primary-500")
+        }
+      >
+        <Sigma className="h-4 w-4" strokeWidth={2.4} />
+      </button>
     </div>
   );
 
@@ -709,6 +727,7 @@ export default function PlannerPage() {
           mode={mode}
           selectedRouteGeometry={selectedRealRoad?.geometry ?? null}
           bottomCardPadding={mobileCardHeight}
+          showWeightPills={showWeightPills}
         />
             <SearchBar
               origin={origin}
@@ -910,6 +929,7 @@ export default function PlannerPage() {
             mode={mode}
             selectedRouteGeometry={selectedRealRoad?.geometry ?? null}
             bottomCardPadding={0}
+            showWeightPills={showWeightPills}
           />
           <SearchBar
             origin={origin}
