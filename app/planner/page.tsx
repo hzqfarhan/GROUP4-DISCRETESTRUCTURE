@@ -458,7 +458,7 @@ export default function PlannerPage() {
               {result.routes.length}
             </span>
           </div>
-          <div className="max-h-56 overflow-y-auto pr-0.5">
+          <div className="flex-1 space-y-1.5 pr-0.5">
             {result.routes.map((r, i) => (
               <RouteListItem
                 key={`${r.edgeIds.join("-")}-${i}`}
@@ -493,7 +493,7 @@ export default function PlannerPage() {
               {result.routes.length}
             </span>
           </div>
-          <div className="max-h-72 overflow-y-auto pr-0.5 space-y-1.5">
+          <div className="flex-1 pr-0.5 space-y-1.5">
             {result.routes.map((r, i) => (
               <details
                 key={`calc-${r.edgeIds.join("-")}-${i}`}
@@ -587,9 +587,6 @@ export default function PlannerPage() {
       <div className="flex-1 min-h-0 space-y-2 px-3 pb-3 overflow-y-auto">
         {/* Always-visible row: priority + Find */}
         <div className="flex items-center gap-2">
-          <div className="flex-1">
-            <PriorityToggle mode={mode} onChange={setMode} />
-          </div>
           <PrimaryButton
             onClick={handleFind}
             loading={loading}
@@ -864,9 +861,6 @@ export default function PlannerPage() {
 
             {ResultTabsAndContent}
 
-            <div className="rounded-2xl border border-white/60 bg-white/70 p-2.5">
-              <PriorityToggle mode={mode} onChange={setMode} />
-            </div>
 
             {!result && (
               <div className="rounded-2xl border border-white/60 bg-white/70 p-3 text-[10px] text-ink-700">
