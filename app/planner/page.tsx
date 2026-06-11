@@ -17,6 +17,8 @@ import {
   Loader2,
   Palette,
   BookOpen,
+  Route as RouteIcon,
+  Calculator as CalculatorIcon,
   Map as MapIcon,
   Satellite,
   Mountain,
@@ -82,6 +84,7 @@ export default function PlannerPage() {
   const [detailsOpen, setDetailsOpen] = useState(false);
   // Mobile card collapsed/expanded. Desktop rail collapsed/expanded.
   const [mobileCard, setMobileCard] = useState<"peek" | "expanded">("peek");
+  const [mobileTab, setMobileTab] = useState<"route" | "calc">("route");
   const [desktopRail, setDesktopRail] = useState<"expanded" | "collapsed">(
     "collapsed",
   );
@@ -476,22 +479,34 @@ export default function PlannerPage() {
             {result ? (
               <>
                 {MiniBento}
-                {mode === "budget" && (
-                  <CalculationPanel
-                    route={result.routes[selectedIdx] ?? result.recommended}
-                    graph={result.graph}
-                    mode={mode}
-                  />
+
+                {/* 2-tab nav: Route (graph timeline) | Calc (W calculation) */}
+                {result.routes.length > 0 && (
+                  <div className="mt-1 flex items-center gap-1 rounded-full border border-white/60 bg-white/70 p-0.5 shadow-sm">
+                    <TabButton
+                      active={mobileTab === "route"}
+                      onClick={() => setMobileTab("route")}
+                      icon={<RouteIcon className="h-3 w-3" />}
+                      label="Route"
+                    />
+                    <TabButton
+                      active={mobileTab === "calc"}
+                      onClick={() => setMobileTab("calc")}
+                      icon={<CalculatorIcon className="h-3 w-3" />}
+                      label="Calc"
+                    />
+                  </div>
                 )}
-                {result.routes.length > 1 && (
+
+                {mobileTab === "route" && result.routes.length > 1 && (
                   <div className="mt-2 space-y-1.5">
                     <div className="flex items-center justify-between px-1 text-[9px] font-semibold uppercase tracking-wider text-ink-500">
-                      <span>All routes</span>
+                      <span>All routes · tap to expand</span>
                       <span className="text-ink-300 normal-case tracking-normal">
                         {result.routes.length}
                       </span>
                     </div>
-                    <div className="max-h-48 overflow-y-auto pr-0.5">
+                    <div className="max-h-56 overflow-y-auto pr-0.5">
                       {result.routes.map((r, i) => (
                         <RouteListItem
                           key={`${r.edgeIds.join("-")}-${i}`}
@@ -506,6 +521,82 @@ export default function PlannerPage() {
                     </div>
                   </div>
                 )}
+
+                {mobileTab === "route" && result.routes.length === 1 && (
+                  <RouteListItem
+                    rank={1}
+                    route={result.routes[0]!}
+                    graph={result.graph}
+                    realRoad={result.realRoads?.[0] ?? null}
+                    isSelected={true}
+                    onSelect={() => {}}
+                  />
+                )}
+
+                {mobileTab === "calc" && (
+                  <div className="mt-2 space-y-1.5">
+                    <div className="flex items-center justify-between px-1 text-[9px] font-semibold uppercase tracking-wider text-ink-500">
+                      <span>W calculation · tap to expand</span>
+                      <span className="text-ink-300 normal-case tracking-normal">
+                        {result.routes.length}
+                      </span>
+                    </div>
+                    <div className="max-h-72 overflow-y-auto pr-0.5 space-y-1.5">
+                      {result.routes.map((r, i) => (
+                        <details
+                          key={`calc-${r.edgeIds.join("-")}-${i}`}
+                          open={i === selectedIdx}
+                          className="group overflow-hidden rounded-lg border border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.78)_0%,rgba(255,255,255,0.6)_100%)] backdrop-blur-xl"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <summary className="flex cursor-pointer list-none items-center gap-1.5 px-1.5 py-1 active:scale-[0.99]">
+                            <span
+                              className={
+                                "flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[8px] font-bold " +
+                                (i === selectedIdx
+                                  ? "bg-primary-500 text-white"
+                                  : "bg-primary-100 text-primary-600")
+                              }
+                            >
+                              {i + 1}
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1 text-[10px] font-semibold text-ink-900">
+                                <span className="truncate">
+                                  {i === 0 ? "Recommended" : `Route ${i + 1}`}
+                                </span>
+                                <span className="shrink-0 text-[8px] font-normal uppercase tracking-wider text-primary-600">
+                                  ΣW {r.totalWeight.toFixed(1)}
+                                </span>
+                              </div>
+                              <div className="mt-px flex items-center gap-1.5 text-[9px] text-ink-500 tabular-nums">
+                                <span>{r.totalDistanceKm.toFixed(1)} km</span>
+                                <span className="text-ink-300">·</span>
+                                <span>{Math.round(r.totalTimeMin)}m</span>
+                                <span className="text-ink-300">·</span>
+                                <span>RM {r.totalTollRM.toFixed(0)}</span>
+                              </div>
+                            </div>
+                            <span className="flex h-4 w-4 shrink-0 items-center justify-center text-ink-400 transition-transform group-open:rotate-180">
+                              <ChevronDown className="h-3 w-3" />
+                            </span>
+                          </summary>
+                          <div
+                            className="border-t border-ink-300/15 bg-white/70 p-1.5"
+                            onClick={() => setSelectedIdx(i)}
+                          >
+                            <CalculationPanel
+                              route={r}
+                              graph={result.graph}
+                              mode={mode}
+                            />
+                          </div>
+                        </details>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="px-1 text-[9px] uppercase tracking-wider text-ink-300">
                   {result.source === "ai" ? "AI-generated graph" : "Curated graph"} · {result.graph.junctions.length}{" "}
                   junctions · {result.graph.edges.length} edges
@@ -842,6 +933,35 @@ function MiniStat({
       </div>
       <div className="text-sm font-bold leading-tight">{value}</div>
     </div>
+  );
+}
+
+function TabButton({
+  active,
+  onClick,
+  icon,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={
+        "flex flex-1 items-center justify-center gap-1 rounded-full px-2 py-1.5 text-[10px] font-semibold transition-colors " +
+        (active
+          ? "bg-primary-500 text-white shadow-sm"
+          : "text-ink-700 hover:text-primary-600")
+      }
+    >
+      {icon}
+      {label}
+    </button>
   );
 }
 
