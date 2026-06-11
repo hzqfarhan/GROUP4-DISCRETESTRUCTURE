@@ -48,6 +48,10 @@ interface RealMapProps {
   // present it is used to fit the map (more accurate than junction
   // coords, which are sparse waypoints).
   selectedRouteGeometry?: { lat: number; lng: number }[] | null;
+  // Pixels to reserve at the bottom of the map (height of a floating
+  // overlay card). Lets the fit land the route in the visible
+  // (non-occluded) part of the map.
+  bottomCardPadding?: number;
 }
 
 function junctionAt(graph: WeightedGraph, id: string) {
@@ -85,27 +89,36 @@ const userIcon = L.divIcon({
   iconAnchor: [13, 13],
 });
 
-function FitBounds({ coords, pathKey }: { coords: { lat: number; lng: number }[]; pathKey?: string }) {
+function FitBounds({
+  coords,
+  pathKey,
+  bottomPadding = 0,
+}: {
+  coords: { lat: number; lng: number }[];
+  pathKey?: string;
+  // Pixels to reserve at the bottom of the map (e.g. the height of a
+  // floating card overlay). Lets us fit a route into the *visible*
+  // portion of the map, not behind the card.
+  bottomPadding?: number;
+}) {
   const map = useMap();
-  // Track the last pathKey we reacted to so a parent re-render with
-  // *the same* pathKey but new coords (e.g. OSRM geometry that just
-  // resolved asynchronously) still triggers a re-fit.
+  // Track the last (pathKey, bottomPadding) tuple we reacted to so a
+  // parent re-render with the same identity but new geometry (e.g.
+  // OSRM that just resolved) re-fits, while a pure parent re-render
+  // doesn't fight the user.
   const lastKeyRef = useRef<string | null>(null);
   useEffect(() => {
     if (coords.length === 0) return;
+    const key = `${pathKey ?? ""}@${bottomPadding}`;
     // Skip the very first mount when there is no pathKey — that's
     // the "no route selected" case and the parent will set the
     // initial center/zoom via MapContainer props.
     if (pathKey == null && lastKeyRef.current == null) {
-      lastKeyRef.current = "";
+      lastKeyRef.current = key;
       return;
     }
-    // Only re-fit when the path identity actually changes (avoids
-    // fighting a user who is panning around mid-trip).
-    if (pathKey != null && pathKey === lastKeyRef.current) {
-      return;
-    }
-    lastKeyRef.current = pathKey ?? "";
+    if (key === lastKeyRef.current) return;
+    lastKeyRef.current = key;
 
     // Make sure the map is sized correctly before we compute bounds
     // (the container may have been resized by a parent re-render
@@ -118,14 +131,15 @@ function FitBounds({ coords, pathKey }: { coords: { lat: number; lng: number }[]
     const bounds = L.latLngBounds(
       coords.map((c) => [c.lat, c.lng] as [number, number]),
     );
-    // flyToBounds is smoother and respects a sensible max zoom for
-    // long routes (no infinite zoom-in to a single point).
+    // flyToBounds with asymmetric padding so the route lands in the
+    // visible (top) portion of the map, not behind the bottom card.
     map.flyToBounds(bounds, {
-      padding: [80, 80],
+      paddingTopLeft: [80, 80],
+      paddingBottomRight: [80, 80 + bottomPadding],
       duration: 0.8,
       maxZoom: 12,
     });
-  }, [coords, map, pathKey]);
+  }, [coords, map, pathKey, bottomPadding]);
   return null;
 }
 
@@ -405,6 +419,7 @@ export const RealMap = forwardRef<RealMapHandle, RealMapProps>(function RealMap(
     onMapClick,
     mode,
     selectedRouteGeometry = null,
+    bottomCardPadding = 0,
   },
   ref,
 ) {
@@ -576,6 +591,7 @@ export const RealMap = forwardRef<RealMapHandle, RealMapProps>(function RealMap(
           key={selectedPathKey ?? "none"}
           coords={allVisibleCoords}
           pathKey={selectedPathKey ?? undefined}
+          bottomPadding={bottomCardPadding}
         />
         <MapController onReady={setControllerApi} />
       </MapContainer>

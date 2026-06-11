@@ -88,6 +88,21 @@ export default function PlannerPage() {
   const [desktopRail, setDesktopRail] = useState<"expanded" | "collapsed">(
     "collapsed",
   );
+
+  // Pixels to reserve at the bottom of the map on mobile so route
+  // fly-to-bounds lands in the *visible* portion (above the bottom
+  // card) instead of behind the card.
+  const [windowH, setWindowH] = useState(800);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onResize = () => setWindowH(window.innerHeight);
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  // Mobile card max-h: 78vh expanded, 88px peek, plus 12px bottom offset.
+  const mobileCardPx =
+    mobileCard === "expanded" ? Math.round(windowH * 0.78) + 12 : 100;
   const [layer, setLayer] = useState<MapLayer>("topo");
   const [pinkFilter, setPinkFilter] = useState(false);
   const [layerMenuOpen, setLayerMenuOpen] = useState(false);
@@ -520,14 +535,7 @@ export default function PlannerPage() {
                           graph={result.graph}
                           realRoad={result.realRoads?.[i] ?? null}
                           isSelected={i === selectedIdx}
-                          onSelect={() => {
-                            setSelectedIdx(i);
-                            // On mobile, collapse the bottom card so the
-                            // full map is visible behind it. Otherwise
-                            // the route's new bounds fly under the card
-                            // and the user thinks nothing happened.
-                            setMobileCard("peek");
-                          }}
+                          onSelect={() => setSelectedIdx(i)}
                         />
                       ))}
                     </div>
@@ -684,6 +692,7 @@ export default function PlannerPage() {
           onMapClick={handleMapClick}
           mode={mode}
           selectedRouteGeometry={selectedRealRoad?.geometry ?? null}
+          bottomCardPadding={mobileCardPx}
         />
             <SearchBar
               origin={origin}
@@ -884,6 +893,7 @@ export default function PlannerPage() {
             onMapClick={handleMapClick}
             mode={mode}
             selectedRouteGeometry={selectedRealRoad?.geometry ?? null}
+            bottomCardPadding={0}
           />
           <SearchBar
             origin={origin}
