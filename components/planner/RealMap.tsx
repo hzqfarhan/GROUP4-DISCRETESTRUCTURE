@@ -87,10 +87,32 @@ const userIcon = L.divIcon({
 
 function FitBounds({ coords, pathKey }: { coords: { lat: number; lng: number }[]; pathKey?: string }) {
   const map = useMap();
+  // Track the last pathKey we reacted to so a parent re-render with
+  // *the same* pathKey but new coords (e.g. OSRM geometry that just
+  // resolved asynchronously) still triggers a re-fit.
+  const lastKeyRef = useRef<string | null>(null);
   useEffect(() => {
     if (coords.length === 0) return;
+    // Skip the very first mount when there is no pathKey — that's
+    // the "no route selected" case and the parent will set the
+    // initial center/zoom via MapContainer props.
+    if (pathKey == null && lastKeyRef.current == null) {
+      lastKeyRef.current = "";
+      return;
+    }
+    // Only re-fit when the path identity actually changes (avoids
+    // fighting a user who is panning around mid-trip).
+    if (pathKey != null && pathKey === lastKeyRef.current) {
+      return;
+    }
+    lastKeyRef.current = pathKey ?? "";
+
+    // Make sure the map is sized correctly before we compute bounds
+    // (the container may have been resized by a parent re-render
+    // — common on mobile when the bottom card expands).
+    map.invalidateSize();
     if (coords.length === 1) {
-      map.flyTo([coords[0]!.lat, coords[0]!.lng], 13, { duration: 0.6 });
+      map.flyTo([coords[0]!.lat, coords[0]!.lng], 13, { duration: 0.8 });
       return;
     }
     const bounds = L.latLngBounds(
@@ -100,12 +122,9 @@ function FitBounds({ coords, pathKey }: { coords: { lat: number; lng: number }[]
     // long routes (no infinite zoom-in to a single point).
     map.flyToBounds(bounds, {
       padding: [80, 80],
-      duration: 0.6,
-      maxZoom: 13,
+      duration: 0.8,
+      maxZoom: 12,
     });
-    // pathKey forces a re-fit whenever the selected path identity
-    // changes (new route selected), even if the same map instance is
-    // being reused.
   }, [coords, map, pathKey]);
   return null;
 }
@@ -553,7 +572,11 @@ export const RealMap = forwardRef<RealMapHandle, RealMapProps>(function RealMap(
           );
         })}
 
-        <FitBounds coords={allVisibleCoords} pathKey={selectedPathKey ?? undefined} />
+        <FitBounds
+          key={selectedPathKey ?? "none"}
+          coords={allVisibleCoords}
+          pathKey={selectedPathKey ?? undefined}
+        />
         <MapController onReady={setControllerApi} />
       </MapContainer>
 

@@ -177,11 +177,16 @@ export default function PlannerPage() {
     setMobileCard("expanded");
   }
 
-  const dist = selectedRealRoad?.distanceKm ?? result?.recommended.totalDistanceKm;
+  const dist =
+    selectedRealRoad?.distanceKm ??
+    selectedRoute?.totalDistanceKm ??
+    result?.recommended.totalDistanceKm ??
+    0;
   const durMin = selectedRealRoad
     ? selectedRealRoad.durationMin
-    : result?.stats.timeMin;
-  const toll = result?.stats.tollRM ?? 0;
+    : selectedRoute?.totalTimeMin ?? result?.stats.timeMin ?? 0;
+  const toll =
+    selectedRoute?.totalTollRM ?? result?.stats.tollRM ?? 0;
 
   // ============================
   // Right-side map controls (Google-Maps style) — bottom-right, sitting
@@ -515,7 +520,14 @@ export default function PlannerPage() {
                           graph={result.graph}
                           realRoad={result.realRoads?.[i] ?? null}
                           isSelected={i === selectedIdx}
-                          onSelect={() => setSelectedIdx(i)}
+                          onSelect={() => {
+                            setSelectedIdx(i);
+                            // On mobile, collapse the bottom card so the
+                            // full map is visible behind it. Otherwise
+                            // the route's new bounds fly under the card
+                            // and the user thinks nothing happened.
+                            setMobileCard("peek");
+                          }}
                         />
                       ))}
                     </div>
