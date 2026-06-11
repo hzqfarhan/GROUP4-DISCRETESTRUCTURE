@@ -6,7 +6,7 @@ export const UTHM_MELAKA_PAIR = {
   originId: "N1_UTHM",
   destinationId: "N_PULAU",
   originCoord: { lat: 1.8592, lng: 103.0819 },
-  destinationCoord: { lat: 2.17908, lng: 102.24913 },
+  destinationCoord: { lat: 2.1790798, lng: 102.2491349 },
 } as const;
 
 // Real coordinates from Google Maps for all junctions. Distances / times /
@@ -27,8 +27,8 @@ const junctions: Junction[] = [
   {
     id: "N_PULAU",
     name: "Masjid Selat Melaka",
-    lat: 2.17908,
-    lng: 102.24913,
+    lat: 2.1790798,
+    lng: 102.2491349,
   },
 
   // Route 2 — AMJ Expressway
