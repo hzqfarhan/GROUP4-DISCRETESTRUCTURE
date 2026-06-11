@@ -133,11 +133,14 @@ function FitBounds({
     );
     // flyToBounds with asymmetric padding so the route lands in the
     // visible (top) portion of the map, not behind the bottom card.
+    // Clamp bottomPadding to at most 35% of the map height so we
+    // never shrink the bounds to a dot when the card is huge.
+    const clampedBottomPad = Math.min(bottomPadding, Math.round(map.getSize().y * 0.35));
     map.flyToBounds(bounds, {
-      paddingTopLeft: [80, 80],
-      paddingBottomRight: [80, 80 + bottomPadding],
+      paddingTopLeft: [60, 60],
+      paddingBottomRight: [60, 60 + clampedBottomPad],
       duration: 0.8,
-      maxZoom: 12,
+      maxZoom: 11,
     });
   }, [coords, map, pathKey, bottomPadding]);
   return null;
@@ -458,10 +461,18 @@ export const RealMap = forwardRef<RealMapHandle, RealMapProps>(function RealMap(
     selectedCoords[0] ?? allJunctionCoords[0] ?? { lat: 2.2, lng: 102.5 };
 
   const allVisibleCoords = useMemo(() => {
-    // Prefer the OSRM real-road geometry for the fit (it traces the
-    // actual road instead of straight line segments between junctions).
+    // Prefer the OSRM real-road geometry for the fit, but only when
+    // it stays reasonably compact. If the geometry spans a huge area
+    // (e.g. OSRM returned a wrong / corrupt polyline), fall back to
+    // the junction waypoints which are always correct.
     if (selectedRouteGeometry && selectedRouteGeometry.length >= 2) {
-      return selectedRouteGeometry;
+      const lats = selectedRouteGeometry.map((c) => c.lat);
+      const lngs = selectedRouteGeometry.map((c) => c.lng);
+      const latSpan = Math.max(...lats) - Math.min(...lats);
+      const lngSpan = Math.max(...lngs) - Math.min(...lngs);
+      // Reject geometries that span more than 2° lat or 2° lng
+      // (≈ 220 km × 220 km in Malaysia). They are clearly wrong.
+      if (latSpan <= 2 && lngSpan <= 2) return selectedRouteGeometry;
     }
     if (selectedCoords.length > 0) return selectedCoords;
     return allJunctionCoords;

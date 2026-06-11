@@ -89,20 +89,35 @@ export default function PlannerPage() {
     "collapsed",
   );
 
+  // Real measured height of the mobile bottom card (in pixels). We
+  // use it as bottom padding for the map's flyToBounds so the route
+  // lands above the card instead of behind it.
+  const [mobileCardHeight, setMobileCardHeight] = useState(0);
+  const mobileCardRef = useRef<HTMLDivElement | null>(null);
+
   // Pixels to reserve at the bottom of the map on mobile so route
   // fly-to-bounds lands in the *visible* portion (above the bottom
-  // card) instead of behind the card.
-  const [windowH, setWindowH] = useState(800);
+  // card) instead of behind the card. The card is absolutely
+  // positioned at bottom-3, so its height + 12px is what the map
+  // needs to "see through" to the route.
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const onResize = () => setWindowH(window.innerHeight);
-    onResize();
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    const el = mobileCardRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => {
+      setMobileCardHeight(el.offsetHeight);
+    });
+    ro.observe(el);
+    setMobileCardHeight(el.offsetHeight);
+    return () => ro.disconnect();
   }, []);
-  // Mobile card max-h: 78vh expanded, 88px peek, plus 12px bottom offset.
-  const mobileCardPx =
-    mobileCard === "expanded" ? Math.round(windowH * 0.78) + 12 : 100;
+  // Card is mounted conditionally (only when result exists). Re-run
+  // the observer whenever the result changes so we get the height of
+  // the *current* card.
+  useEffect(() => {
+    const el = mobileCardRef.current;
+    if (!el) return;
+    setMobileCardHeight(el.offsetHeight);
+  }, [result]);
   const [layer, setLayer] = useState<MapLayer>("topo");
   const [pinkFilter, setPinkFilter] = useState(false);
   const [layerMenuOpen, setLayerMenuOpen] = useState(false);
@@ -402,6 +417,7 @@ export default function PlannerPage() {
   // ============================
   const MobileFloatingCard = (
     <div
+      ref={mobileCardRef}
       className={
         "pointer-events-auto absolute bottom-3 left-3 right-3 z-30 rounded-3xl border border-white/60 " +
         "bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(255,255,255,0.85)_100%)] " +
@@ -692,7 +708,7 @@ export default function PlannerPage() {
           onMapClick={handleMapClick}
           mode={mode}
           selectedRouteGeometry={selectedRealRoad?.geometry ?? null}
-          bottomCardPadding={mobileCardPx}
+          bottomCardPadding={mobileCardHeight}
         />
             <SearchBar
               origin={origin}
