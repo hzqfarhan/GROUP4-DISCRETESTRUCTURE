@@ -242,94 +242,99 @@ export function SearchBar({
           {/* Origin / Destination rows with inline autocomplete */}
           <div className="border-b border-ink-300/10 p-3">
             {/* Origin row */}
-            <div className="flex items-center gap-2">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-50">
-                <MapPin className="h-3.5 w-3.5 text-primary-500" strokeWidth={2.4} />
-              </span>
-              {editing === "origin" ? (
-                <input
-                  autoFocus
-                  value={originQ}
-                  onChange={(e) => setOriginQ(e.target.value)}
-                  onFocus={() => setEditing("origin")}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      onChangeOrigin(originQ);
-                      setEditing("destination");
-                    } else if (e.key === "Escape") {
-                      setEditing(null);
-                    }
-                  }}
-                  className="h-9 flex-1 rounded-full border border-primary-200 bg-white px-3 text-xs font-semibold text-ink-900 focus:border-primary-500 focus:outline-none"
-                  placeholder="Type origin place…"
-                />
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setEditing("origin")}
-                  className={
-                    "h-9 flex-1 rounded-full px-3 text-left text-xs font-semibold " +
-                    (origin
-                      ? "bg-white text-ink-900"
-                      : "bg-primary-50 text-ink-500 italic")
-                  }
-                >
-                  {origin || "Choose origin…"}
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={useMyLocation}
-                disabled={locating}
-                title="Use my current location"
-                aria-label="Use my current location"
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-primary-500 shadow-sm hover:bg-primary-50 disabled:opacity-60"
-              >
-                {locating ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-50">
+                  <MapPin className="h-3.5 w-3.5 text-primary-500" strokeWidth={2.4} />
+                </span>
+                {editing === "origin" ? (
+                  <input
+                    autoFocus
+                    value={originQ}
+                    onChange={(e) => setOriginQ(e.target.value)}
+                    onFocus={() => setEditing("origin")}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        onChangeOrigin(originQ);
+                        setEditing("destination");
+                      } else if (e.key === "Escape") {
+                        setEditing(null);
+                      }
+                    }}
+                    className="h-9 flex-1 rounded-full border border-primary-200 bg-white px-3 text-xs font-semibold text-ink-900 focus:border-primary-500 focus:outline-none"
+                    placeholder="Type origin place…"
+                  />
                 ) : (
-                  <LocateFixed className="h-3.5 w-3.5" />
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={onSwap}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-ink-500 shadow-sm hover:text-primary-500"
-                aria-label="Swap"
-              >
-                <ArrowLeftRight className="h-3.5 w-3.5" />
-              </button>
-              {editing === "destination" ? (
-                <input
-                  autoFocus
-                  value={destQ}
-                  onChange={(e) => setDestQ(e.target.value)}
-                  onFocus={() => setEditing("destination")}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      onChangeDestination(destQ);
-                      setEditing(null);
-                    } else if (e.key === "Escape") {
-                      setEditing(null);
+                  <button
+                    type="button"
+                    onClick={() => setEditing("origin")}
+                    className={
+                      "h-9 flex-1 rounded-full px-3 text-left text-xs font-semibold " +
+                      (origin
+                        ? "bg-white text-ink-900"
+                        : "bg-primary-50 text-ink-500 italic")
                     }
-                  }}
-                  className="h-9 flex-1 rounded-full border border-primary-200 bg-white px-3 text-xs font-semibold text-ink-900 focus:border-primary-500 focus:outline-none"
-                  placeholder="Type destination…"
-                />
-              ) : (
+                  >
+                    {origin || "Choose origin…"}
+                  </button>
+                )}
                 <button
                   type="button"
-                  onClick={() => setEditing("destination")}
-                  className={
-                    "h-9 flex-1 rounded-full px-3 text-left text-xs font-semibold " +
-                    (destination
-                      ? "bg-white text-ink-900"
-                      : "bg-primary-50 text-ink-500 italic")
-                  }
+                  onClick={useMyLocation}
+                  disabled={locating}
+                  title="Use my current location"
+                  aria-label="Use my current location"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-primary-500 shadow-sm hover:bg-primary-50 disabled:opacity-60"
                 >
-                  {destination || "Choose destination…"}
+                  {locating ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <LocateFixed className="h-3.5 w-3.5" />
+                  )}
                 </button>
-              )}
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={onSwap}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-ink-500 shadow-sm hover:bg-primary-50 hover:text-primary-500"
+                  aria-label="Swap"
+                >
+                  <ArrowLeftRight className="h-3.5 w-3.5" />
+                </button>
+                {editing === "destination" ? (
+                  <input
+                    autoFocus
+                    value={destQ}
+                    onChange={(e) => setDestQ(e.target.value)}
+                    onFocus={() => setEditing("destination")}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        onChangeDestination(destQ);
+                        setEditing(null);
+                      } else if (e.key === "Escape") {
+                        setEditing(null);
+                      }
+                    }}
+                    className="h-9 flex-1 rounded-full border border-primary-200 bg-white px-3 text-xs font-semibold text-ink-900 focus:border-primary-500 focus:outline-none"
+                    placeholder="Type destination…"
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setEditing("destination")}
+                    className={
+                      "h-9 flex-1 rounded-full px-3 text-left text-xs font-semibold " +
+                      (destination
+                        ? "bg-white text-ink-900"
+                        : "bg-primary-50 text-ink-500 italic")
+                    }
+                  >
+                    {destination || "Choose destination…"}
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Autocomplete suggestions */}

@@ -173,7 +173,7 @@ const edges: Edge[] = [
     to: "N_AMJ_TgBidara",
     distanceKm: 35,
     timeMin: 26,
-    tollRM: 3.5,
+    tollRM: 0.0,
     roadType: "highway",
     penaltyMin: 0,
   },
