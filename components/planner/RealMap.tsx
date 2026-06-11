@@ -274,10 +274,12 @@ function AlternativePolyline({
   graph: WeightedGraph;
   path: string[];
 }) {
-  const points = useMemo(
-    () => straightSegments(graph, path),
-    [graph, path],
-  );
+  const coords = useMemo(() => pathToCoords(graph, path), [graph, path]);
+  const osrmGeo = useOsrmForSelected(coords);
+  const points = useMemo(() => {
+    if (osrmGeo && osrmGeo.length >= 2) return osrmGeo;
+    return straightSegments(graph, path);
+  }, [osrmGeo, graph, path]);
   if (points.length < 2) return null;
   return (
     <>
