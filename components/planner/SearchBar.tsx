@@ -213,11 +213,25 @@ export function SearchBar({
           )}
           <button
             type="button"
-            onClick={() => setOpen((v) => !v)}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-500 text-white shadow-[0_2px_8px_rgba(223,0,89,0.30)] active:scale-95"
-            aria-label="Search"
+            onClick={() => {
+              if (canFind) {
+                onFind();
+                setOpen(false);
+                return;
+              }
+              setOpen((v) => !v);
+              if (!open) setEditing("origin");
+            }}
+            disabled={!canFind && !open}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-500 text-white shadow-[0_2px_8px_rgba(223,0,89,0.30)] active:scale-95 disabled:opacity-60"
+            aria-label={canFind ? "Find route" : "Search"}
+            title={canFind ? "Find route" : "Search"}
           >
-            <Search className="h-4 w-4" strokeWidth={2.6} />
+            {loading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Search className="h-4 w-4" strokeWidth={2.6} />
+            )}
           </button>
         </div>
       </div>

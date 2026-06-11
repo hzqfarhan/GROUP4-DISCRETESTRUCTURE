@@ -13,6 +13,8 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { WeightedGraph } from "@/lib/graph/types";
 import { fetchOsrmRoute, type OsrmRoute } from "@/lib/routing/osrm";
+import { getBeta } from "@/lib/graph/weight";
+import type { OptimizationMode } from "@/lib/graph/types";
 
 export type MapLayer = "streets" | "satellite" | "topo" | "light";
 
@@ -26,6 +28,7 @@ export interface RealMapHandle {
   zoomIn: () => void;
   zoomOut: () => void;
   recenter: () => void;
+  flyTo: (lat: number, lng: number, zoom?: number) => void;
 }
 
 interface RealMapProps {
@@ -40,6 +43,7 @@ interface RealMapProps {
   userLocation?: UserLocation | null;
   onMapClick?: (loc: { lat: number; lng: number }) => void;
   onLocateRequest?: () => void;
+  mode?: OptimizationMode;
 }
 
 function junctionAt(graph: WeightedGraph, id: string) {
@@ -105,6 +109,9 @@ function MapController({ onReady }: MapControllerProps) {
       recenter: () => {
         // Recenter to Peninsular Malaysia overview.
         map.flyTo([2.6, 102.3], 7, { duration: 0.6 });
+      },
+      flyTo: (lat: number, lng: number, zoom: number = 15) => {
+        map.flyTo([lat, lng], zoom, { duration: 0.8 });
       },
     });
   }, [map, onReady]);
@@ -286,6 +293,72 @@ function SelectedPolyline({
   );
 }
 
+function weightPillIcon(
+  timeMin: number,
+  tollRM: number,
+  penaltyMin: number,
+  w: number,
+): L.DivIcon {
+  const html = `
+    <div class="iep-weight-pill">
+      <div class="row w"><span class="lbl">W</span><span class="val">${w.toFixed(1)}</span></div>
+      <div class="row t"><span class="lbl">⏱</span><span class="val">${timeMin.toFixed(1)}m</span></div>
+      <div class="row tl"><span class="lbl">$</span><span class="val">${tollRM.toFixed(2)}</span></div>
+      <div class="row p"><span class="lbl">⚠</span><span class="val">${penaltyMin.toFixed(1)}m</span></div>
+    </div>`;
+  return L.divIcon({
+    className: "iep-weight-pill-wrap",
+    html,
+    iconSize: [82, 56],
+    iconAnchor: [41, 28],
+  });
+}
+
+function WeightPills({
+  graph,
+  path,
+  mode,
+}: {
+  graph: WeightedGraph;
+  path: string[];
+  mode?: OptimizationMode;
+}) {
+  const beta = getBeta(mode ?? "time");
+  const segments: { mid: [number, number]; html: L.DivIcon }[] = [];
+  for (let i = 0; i < path.length - 1; i++) {
+    const a = junctionAt(graph, path[i]!);
+    const b = junctionAt(graph, path[i + 1]!);
+    if (!a?.lat || !a?.lng || !b?.lat || !b?.lng) continue;
+    const edge = graph.edges.find(
+      (e) =>
+        (e.from === a.id && e.to === b.id) ||
+        (e.from === b.id && e.to === a.id),
+    );
+    if (!edge) continue;
+    const w =
+      edge.timeMin + edge.tollRM * beta + edge.penaltyMin;
+    segments.push({
+      mid: [(a.lat + b.lat) / 2, (a.lng + b.lng) / 2],
+      html: weightPillIcon(edge.timeMin, edge.tollRM, edge.penaltyMin, w),
+    });
+  }
+  if (segments.length === 0) return null;
+  return (
+    <>
+      {segments.map((s, i) => (
+        <Marker
+          key={`wp-${i}`}
+          position={s.mid}
+          icon={s.html}
+          interactive={false}
+          keyboard={false}
+          zIndexOffset={500}
+        />
+      ))}
+    </>
+  );
+}
+
 export const RealMap = forwardRef<RealMapHandle, RealMapProps>(function RealMap(
   {
     graph,
@@ -298,6 +371,7 @@ export const RealMap = forwardRef<RealMapHandle, RealMapProps>(function RealMap(
     pinkFilter = false,
     userLocation = null,
     onMapClick,
+    mode,
   },
   ref,
 ) {
@@ -310,6 +384,8 @@ export const RealMap = forwardRef<RealMapHandle, RealMapProps>(function RealMap(
       zoomIn: () => controllerApi?.zoomIn(),
       zoomOut: () => controllerApi?.zoomOut(),
       recenter: () => controllerApi?.recenter(),
+      flyTo: (lat: number, lng: number, zoom: number = 15) =>
+        controllerApi?.flyTo(lat, lng, zoom),
     }),
     [controllerApi],
   );
@@ -421,6 +497,10 @@ export const RealMap = forwardRef<RealMapHandle, RealMapProps>(function RealMap(
 
         {selectedPath && (
           <SelectedPolyline graph={graph} path={selectedPath} />
+        )}
+
+        {selectedPath && (
+          <WeightPills graph={graph} path={selectedPath} mode={mode} />
         )}
 
         {graph.junctions.map((j) => {
@@ -550,6 +630,56 @@ export const RealMap = forwardRef<RealMapHandle, RealMapProps>(function RealMap(
           font-size: 9px !important;
           background: rgba(255, 255, 255, 0.7) !important;
           backdrop-filter: blur(6px);
+        }
+        .iep-weight-pill-wrap {
+          background: transparent !important;
+          border: 0 !important;
+          pointer-events: none;
+        }
+        .iep-weight-pill {
+          display: flex;
+          flex-direction: column;
+          gap: 1px;
+          min-width: 78px;
+          padding: 4px 6px;
+          border-radius: 8px;
+          background: rgba(255, 255, 255, 0.96);
+          border: 1px solid rgba(223, 0, 89, 0.25);
+          box-shadow: 0 4px 12px rgba(82, 63, 160, 0.22);
+          font-family: var(--font-sans, system-ui);
+          color: #221f20;
+          backdrop-filter: blur(6px);
+          transform: translate(-50%, -50%);
+        }
+        .iep-weight-pill .row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 6px;
+          font-size: 9px;
+          line-height: 1.1;
+        }
+        .iep-weight-pill .row .lbl {
+          color: #6b7280;
+          font-weight: 600;
+        }
+        .iep-weight-pill .row .val {
+          color: #221f20;
+          font-weight: 700;
+          font-variant-numeric: tabular-nums;
+        }
+        .iep-weight-pill .row.w {
+          border-bottom: 1px solid rgba(223, 0, 89, 0.18);
+          padding-bottom: 2px;
+          margin-bottom: 1px;
+        }
+        .iep-weight-pill .row.w .lbl {
+          color: #df0059;
+          font-size: 10px;
+        }
+        .iep-weight-pill .row.w .val {
+          color: #df0059;
+          font-size: 11px;
         }
       `}</style>
 

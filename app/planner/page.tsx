@@ -83,7 +83,7 @@ export default function PlannerPage() {
   const [desktopRail, setDesktopRail] = useState<"expanded" | "collapsed">(
     "collapsed",
   );
-  const [layer, setLayer] = useState<MapLayer>("streets");
+  const [layer, setLayer] = useState<MapLayer>("topo");
   const [pinkFilter, setPinkFilter] = useState(false);
   const [layerMenuOpen, setLayerMenuOpen] = useState(false);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
@@ -214,6 +214,11 @@ export default function PlannerPage() {
                 label: "My current location",
               });
               setError(null);
+              mapRef.current?.flyTo(
+                pos.coords.latitude,
+                pos.coords.longitude,
+                15,
+              );
             },
             (err) =>
               setError(err.message || "Could not get your location."),
@@ -552,6 +557,7 @@ export default function PlannerPage() {
           pinkFilter={pinkFilter}
           userLocation={userLocation}
           onMapClick={handleMapClick}
+          mode={mode}
         />
             <SearchBar
               origin={origin}
@@ -749,6 +755,7 @@ export default function PlannerPage() {
             pinkFilter={pinkFilter}
             userLocation={userLocation}
             onMapClick={handleMapClick}
+            mode={mode}
           />
           <SearchBar
             origin={origin}
