@@ -26,3 +26,5 @@ console.log("Path:", single?.path.join(" -> "));
 console.log("W:", single?.totalWeight);
 
 console.log("\nSanity: there are at least 3 distinct routes →", tRoutes.length >= 3 && bRoutes.length >= 3 ? "OK" : "FAIL");
+
+export {};

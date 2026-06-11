@@ -15,3 +15,5 @@ for (const mode of ["time", "budget"] as const) {
     console.log(`     ${r.path.join(" → ")}`);
   });
 }
+
+export {};
