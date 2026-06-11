@@ -51,7 +51,8 @@ Schema:
 }
 
 Rules:
-- The first junction's name MUST be the origin; the last junction's name MUST be the destination.
+- The first junction's "name" MUST be EXACTLY the origin string provided by the user (verbatim, including punctuation like commas).
+- The last junction's "name" MUST be EXACTLY the destination string provided by the user (verbatim).
 - Provide 2-3 alternate route families (expressway vs federal vs local).
 - lat/lng should be realistic for the region. Estimate if you must; rough values are fine.
 - Use real place names for intermediate junctions.

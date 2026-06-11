@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "JimatJourney",
     short_name: "JJ",
     description:
-      "Find the optimal route between UTHM Parit Raja and Masjid Sri Sendayan (or any other place) using graph theory + Dijkstra.",
+      "AI-powered routing across Peninsular Malaysia — type any origin and destination and we build a graph and run Dijkstra on it.",
     start_url: "/planner",
     scope: "/",
     display: "standalone",

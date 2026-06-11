@@ -498,7 +498,7 @@ export default function PlannerPage() {
                   </div>
                 )}
                 <div className="px-1 text-[9px] uppercase tracking-wider text-ink-300">
-                  Source: {result.source} · {result.graph.junctions.length}{" "}
+                  {result.source === "ai" ? "AI-generated graph" : "Curated graph"} · {result.graph.junctions.length}{" "}
                   junctions · {result.graph.edges.length} edges
                   {result.realRoads?.some(Boolean) && " · real road ✓"}
                 </div>

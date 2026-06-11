@@ -26,7 +26,7 @@ interface SearchBarProps {
   hasResult: boolean;
 }
 
-const HARD_PAIRS = [
+const SUGGESTED_PAIRS = [
   { id: "sendayan" as const, o: "UTHM Parit Raja", d: "Masjid Sri Sendayan" },
   { id: "melaka" as const, o: "UTHM Parit Raja", d: "Masjid Selat Melaka" },
 ];
@@ -389,10 +389,10 @@ export function SearchBar({
             <div className="p-3">
               <div className="mb-1.5 flex items-center gap-1 px-0.5 text-[9px] font-semibold uppercase tracking-wider text-primary-600">
                 <Sparkles className="h-3 w-3" />
-                Hardcoded pairs
+                Quick starts
               </div>
               <div className="grid grid-cols-1 gap-1.5">
-                {HARD_PAIRS.map((p) => (
+                {SUGGESTED_PAIRS.map((p) => (
                   <button
                     key={p.id}
                     type="button"
@@ -410,7 +410,7 @@ export function SearchBar({
                         {p.o} → {p.d}
                       </div>
                       <div className="truncate text-[9px] text-white/80">
-                        No API call needed
+                        Curated demo route
                       </div>
                     </div>
                   </button>

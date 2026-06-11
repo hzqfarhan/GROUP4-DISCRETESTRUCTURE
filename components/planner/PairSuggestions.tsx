@@ -7,8 +7,8 @@ interface PairSuggestionsProps {
   onTypeDestination: () => void;
 }
 
-// Static description metadata for the two hardcoded pairs. Matches
-// lib/graph/registry.ts.
+// Quick-start route chips. The underlying routing engine is fully AI-driven —
+// these chips just pre-fill the search with two popular demo trips.
 const PAIR_META: Record<
   "sendayan" | "melaka",
   { label: string; origin: string; destination: string; tag: string; tone: "sendayan" | "melaka" }
@@ -17,14 +17,14 @@ const PAIR_META: Record<
     label: "Masjid Sri Sendayan",
     origin: "UTHM Parit Raja",
     destination: "Masjid Sri Sendayan",
-    tag: "highway + federal · 4 routes",
+    tag: "AI-routed demo trip",
     tone: "sendayan",
   },
   melaka: {
     label: "Masjid Selat Melaka",
     origin: "UTHM Parit Raja",
     destination: "Masjid Selat Melaka",
-    tag: "PLUS / AMJ / FR5 / inland · 6 routes",
+    tag: "AI-routed demo trip",
     tone: "melaka",
   },
 };

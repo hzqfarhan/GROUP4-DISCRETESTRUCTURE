@@ -6,7 +6,7 @@ import { InstallPrompt } from "@/components/InstallPrompt";
 export const metadata: Metadata = {
   title: "JimatJourney (JJ)",
   description:
-    "JJ (JimatJourney) — find the optimal route between UTHM Parit Raja and Masjid Sri Sendayan (or any other place) with time- or budget-optimized Dijkstra routing on real Malaysian roads.",
+    "JJ (JimatJourney) — AI-powered routing across Peninsular Malaysia. Type any origin and destination, and the system builds a graph on the fly and runs Dijkstra with time- or budget-optimised weights.",
   applicationName: "JimatJourney",
   icons: {
     icon: [

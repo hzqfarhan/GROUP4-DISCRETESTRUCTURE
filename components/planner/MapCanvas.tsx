@@ -18,8 +18,9 @@ interface Point {
 const W = 430;
 const H = 720;
 
-// Hand-laid positions for the UTHM → Masjid Sri Sendayan graph
-const HARDCODED_POSITIONS: Record<string, Point> = {
+// Hand-tuned layout positions for the demo Sendayan route so the
+// schematic illustration looks balanced in the About page.
+const LAYOUT_POSITIONS: Record<string, Point> = {
   N1_UTHM: { x: 60, y: 120 },
   N2_AyerHitamTol: { x: 180, y: 180 },
   N3_YongPeng: { x: 110, y: 250 },
@@ -76,8 +77,8 @@ export function MapCanvas({
   showFullGraph = true,
 }: MapCanvasProps) {
   const positions = useMemo(() => {
-    if (graph.junctions.some((j) => HARDCODED_POSITIONS[j.id])) {
-      return HARDCODED_POSITIONS;
+    if (graph.junctions.some((j) => LAYOUT_POSITIONS[j.id])) {
+      return LAYOUT_POSITIONS;
     }
     return fallbackPositions(graph);
   }, [graph]);
