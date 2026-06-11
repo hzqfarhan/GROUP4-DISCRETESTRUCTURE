@@ -107,7 +107,7 @@ async function callOnce(
     return extractJson(content);
   }
 
-  const res = await fetch(`${baseUrl.replace(/\\/$/, "")}/chat/completions`, {
+  const res = await fetch(`${baseUrl.replace(/\/$/, "")}/chat/completions`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
